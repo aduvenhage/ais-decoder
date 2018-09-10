@@ -4,6 +4,7 @@
 
 #include <string>
 #include <vector>
+#include <future>
 
 
 
@@ -13,7 +14,8 @@
 class AisDummyDecoder : public AIS::AisDecoder
 {
  public:
-    AisDummyDecoder()
+    AisDummyDecoder(int _iIndex)
+        :AisDecoder(_iIndex)
     {}
     
  protected:
@@ -48,7 +50,7 @@ class AisDummyDecoder : public AIS::AisDecoder
 /// decoder callback that just prints progress/stats to console
 void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
 {
-    printf("bytes = %lu, messages = %lu, errors = %lu\n", (unsigned long)_uTotalBytes, (unsigned long)_decoder.getTotalMessageCount(), (unsigned long)_decoder.getDecodingErrorCount());
+    //printf("%d: bytes = %lu, messages = %lu, errors = %lu\n", _decoder.index(), (unsigned long)_uTotalBytes, (unsigned long)_decoder.getTotalMessageCount(), (unsigned long)_decoder.getDecodingErrorCount());
 }
 
 
@@ -58,12 +60,12 @@ void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
  The progress callback 'progressCb(...)' is called after a block of data has been processed.
  
  */
-void testAis(const std::string &_strLogPath)
+void testAis(const std::string &_strLogPath, int _iIndex)
 {
-    const size_t BLOCK_SIZE = 1024 * 4;
+    const size_t BLOCK_SIZE = 1024 * 64;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
-    AisDummyDecoder decoder;
+    AisDummyDecoder decoder(_iIndex);
     
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     AIS::processAisFile(std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath, decoder, BLOCK_SIZE, progressCb);
@@ -71,9 +73,36 @@ void testAis(const std::string &_strLogPath)
     auto td = UTILS::CLOCK::getClockNow() - tsInit;
     double dTd = UTILS::CLOCK::getClockDurationS(td);
     
-    printf("rate = %.2f, count = %lu, time = %.2f\n\n\n\n", (float)(decoder.getTotalMessageCount() / dTd), (unsigned long)decoder.getTotalMessageCount(), dTd);
+    printf("%d: rate = %.2f, count = %lu, time = %.2f\n", decoder.index(), (float)(decoder.getTotalMessageCount() / dTd), (unsigned long)decoder.getTotalMessageCount(), dTd);
 }
 
+
+/**
+ Start multiple threads and then wait for all of them to complete
+ */
+void runAndWait()
+{
+    std::vector<std::future<void>> vecThreads;
+    
+    // NOTE: puts the std::future values (result of async) in  alist to wait on
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170210.log", 0));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170211.log", 1));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170212.log", 2));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170213.log", 3));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170214.log", 4));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170215.log", 5));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170216.log", 6));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170217.log", 7));
+
+    while (vecThreads.empty() == false)
+    {
+        auto &result = vecThreads.back();
+        if (result.wait_for(std::chrono::milliseconds(10)) == std::future_status::ready)
+        {
+            vecThreads.pop_back();
+        }
+    }
+}
 
 /**
  Runs through several files, each with its own decoder, all in on thread.
@@ -81,11 +110,14 @@ void testAis(const std::string &_strLogPath)
  */
 int main()
 {
+    
     // just keep on loading files forever
     for (;;)
     {
-        testAis("nmea_data_sample.txt");
+        printf("New generation started.\n");
+        
+        runAndWait();
     }
-
+    
     return 0;
 }

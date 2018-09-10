@@ -174,8 +174,9 @@ bool MultiSentence::isComplete() const
 
 
 
-AisDecoder::AisDecoder()
-    :m_multiSentences{},
+AisDecoder::AisDecoder(int _iIndex)
+    :m_iIndex(_iIndex),
+     m_multiSentences{},
      m_msgCounts{},
      m_uTotalMessages(0),
      m_uTotalBytes(0),

@@ -121,6 +121,7 @@ set_source_files_properties(${PROJ_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 # include source
 add_subdirectory("ais_decoder")
 add_subdirectory("examples/file_reader")
+add_subdirectory("examples/file_reader_mt")
 
 
 

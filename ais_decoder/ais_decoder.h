@@ -112,7 +112,10 @@ namespace AIS
         const static int MAX_MSG_COUNT             = 64;       ///< max message type count (unique messsage IDs)
 
      public:
-        AisDecoder();
+        AisDecoder(int _iIndex = 0);
+        
+        /// returns the user defined index
+        int index() const {return m_iIndex;}
         
         /// decode next message (starts reading from input buffer with the specified offset; returns the number of bytes processed)
         size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
@@ -186,6 +189,7 @@ namespace AIS
         void decodeType24(PayloadBuffer &_buffer);
         
     private:
+        int                                                                     m_iIndex;               ///< arbitrary id/index set by user for this decoder
         PayloadBuffer                                                           m_binaryBuffer;
         std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;
         std::vector<StringRef>                                                  m_words;
