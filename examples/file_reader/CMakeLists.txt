@@ -15,7 +15,7 @@ SET(APP_SRC
 # linker settings
 set(targetname "file_reader")
 ADD_EXECUTABLE(${targetname} ${APP_SRC})
-set_property(TARGET ${targetname} PROPERTY FOLDER targets)
+set_property(TARGET ${targetname} PROPERTY FOLDER examples)
 
 IF(WIN32)
     TARGET_LINK_LIBRARIES(${targetname} optimized ais_decoder)

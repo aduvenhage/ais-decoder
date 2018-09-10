@@ -19,7 +19,7 @@ IF(WIN32)
     SET(WIN32_3RDPARTY_LIBS "C:/packages/lib" CACHE PATH "")
 ELSE(WIN32)
     SET(AIS_LIB_INSTALL_PATH "lib" CACHE PATH "System path to install library to -- prefixed with CMAKE_INSTALL_PREFIX.")
-    SET(AIS_SRC_INSTALL_PATH "include/ais_decoder" CACHE PATH "System path to install header files to -- prefixed with CMAKE_INSTALL_PREFIX.")
+    SET(AIS_SRC_INSTALL_PATH "include" CACHE PATH "System path to install header files to -- prefixed with CMAKE_INSTALL_PREFIX.")
 ENDIF(WIN32)
 
 message("Build tool: " ${CMAKE_BUILD_TOOL})

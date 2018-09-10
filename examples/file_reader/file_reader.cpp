@@ -11,10 +11,10 @@
 
 
 /// Decoder implementation that does nothing -- i.e. just testing NMEA decoding performance
-class AisTestDecoder : public AIS::AisDecoder
+class AisDummyDecoder : public AIS::AisDecoder
 {
  public:
-    AisTestDecoder()
+    AisDummyDecoder()
     {}
     
  protected:
@@ -49,7 +49,7 @@ class AisTestDecoder : public AIS::AisDecoder
 /// decoder callback that just prints progress/stats to console
 void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
 {
-    printf("bytes = %lu, messages=%lu, errors=%lu\n", (unsigned long)_uTotalBytes, (unsigned long)_decoder.getTotalMessageCount(), (unsigned long)_decoder.getDecodingErrorCount());
+    printf("bytes = %lu, messages = %lu, errors = %lu\n", (unsigned long)_uTotalBytes, (unsigned long)_decoder.getTotalMessageCount(), (unsigned long)_decoder.getDecodingErrorCount());
 }
 
 
@@ -61,10 +61,10 @@ void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
  */
 void test_ais(const std::string &_strLogPath)
 {
-    const size_t BLOCK_SIZE = 1024 * 1024 * 8;
+    const size_t BLOCK_SIZE = 1024 * 4;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
-    AisTestDecoder decoder;
+    AisDummyDecoder decoder;
     AIS::processAisFile(_strLogPath, decoder, BLOCK_SIZE, progressCb);
     
     auto td = UTILS::CLOCK::getClockNow() - tsInit;
@@ -80,18 +80,10 @@ void test_ais(const std::string &_strLogPath)
  */
 int main()
 {
-    // NOTE: EXAMPLE_DATA_PATH is defined by cxmake script to be absolute path to source/data folder
+    // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     for (;;)
     {
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170201.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170203.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170204.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170205.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170206.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170207.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170208.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170209.log");
-        test_ais(std::string(EXAMPLE_DATA_PATH) + "/ais_20170210.log");
+        test_ais(std::string(EXAMPLE_DATA_PATH) + "/nmea_data_sample.txt");
     }
 
     return 0;

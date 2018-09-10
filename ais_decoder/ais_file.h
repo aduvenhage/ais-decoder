@@ -105,6 +105,8 @@ namespace AIS
                     _progressCb(uTotalBytes, _decoder);
                 }
             }
+            
+            fclose(pFileIn);
         }
     }
 
