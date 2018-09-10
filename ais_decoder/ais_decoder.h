@@ -65,7 +65,7 @@ namespace AIS
 
      private:
         std::array<unsigned char, MAX_PAYLOAD_SIZE>       m_data;
-        size_t                                            m_iBitIndex;
+        int32_t                                           m_iBitIndex;
     };
     
     

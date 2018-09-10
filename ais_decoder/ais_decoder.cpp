@@ -63,7 +63,7 @@ std::string PayloadBuffer::getString(int _iNumBits)
 {
     std::string ret(_iNumBits/6, ' ');
     int iNumChars = _iNumBits/6;
-    size_t iStartBitIndex = m_iBitIndex;
+    int32_t iStartBitIndex = m_iBitIndex;
     
     for (int i = 0; i < iNumChars; i++)
     {
