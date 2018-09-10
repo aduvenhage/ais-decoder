@@ -443,7 +443,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                         int iMsgId = strtoi(m_words[3]);
                         int iFragmentNum = strtoi(m_words[2]);
                         
-                        if (iMsgId > m_multiSentences.size())
+                        if (iMsgId > (int)m_multiSentences.size())
                         {
                             m_uDecodingErrors++;
                             onDecodeError(strLine, std::string("Invalid message sequence id (") + std::to_string(iMsgId) + std::string(")."));

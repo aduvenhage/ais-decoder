@@ -112,6 +112,7 @@ set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_RELEASE NDEBUG=1)
 # capture project/build/test files (not compiled, but visible in solutions)
 set(PROJ_FILES
     ${CMAKE_SOURCE_DIR}/README.md
+    ${CMAKE_SOURCE_DIR}/examples/utils.h
 )
 
 add_custom_target(proj_files SOURCES ${PROJ_FILES})
