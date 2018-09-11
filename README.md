@@ -25,6 +25,8 @@ Some time was also spent on improving the speed of the NMEA string processing to
 - [ ] Validate talker IDs
 - [ ] Investigate faster ascii de-armouring and bit packing techniques
 - [ ] Look at multiple threads/decoders working on the same file, for very large files
+- [ ] Support NMEA files/data with non-standard meta data, timestamp data, etc.
+- [ ] Add minimal networking to work with RTL-AIS and also to forward raw data
 
 ## Build
 This project uses CMAKE to build.  To build through command line on linux, do the following:
