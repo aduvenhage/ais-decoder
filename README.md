@@ -16,13 +16,15 @@ Some time was also spent on improving the speed of the NMEA string processing to
 - [x] Multi-Sentence message handling
 - [x] Decoder base class
 - [x] Support types 1, 2, 3, 4, 5, 18, 19, 24 -- position reports and static info
+- [x] Test with large data-sets (files)
 - [x] Validate payload sizes (reject messages, where type and size does not match)
 - [x] Build-up message stats (bytes processed, messages processed, etc.)
 - [x] Profile and improve speed 
-- [x] Validate fragment count and number values
+- [x] Validate fragment count and fragment number values
 
 - [ ] Validate talker IDs
 - [ ] Investigate faster ascii de-armouring and bit packing techniques
+- [ ] Look at multiple threads/decoders working on the same file, for very large files
 
 ## Build
 This project uses CMAKE to build.  To build through command line on linux, do the following:
