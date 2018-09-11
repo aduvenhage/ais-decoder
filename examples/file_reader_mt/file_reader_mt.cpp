@@ -19,7 +19,7 @@ class AisDummyDecoder : public AIS::AisDecoder
     {}
     
  protected:
-    virtual void onType1(unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
+    virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
     
     virtual void onType4(unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
                          bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {}
@@ -62,7 +62,7 @@ void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
  */
 void testAis(const std::string &_strLogPath, int _iIndex)
 {
-    const size_t BLOCK_SIZE = 1024 * 64;
+    const size_t BLOCK_SIZE = 1024 * 512;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
     AisDummyDecoder decoder(_iIndex);
@@ -84,16 +84,12 @@ void runAndWait()
 {
     std::vector<std::future<void>> vecThreads;
     
-    // NOTE: puts the std::future values (result of async) in  alist to wait on
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170210.log", 0));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170211.log", 1));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170212.log", 2));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170213.log", 3));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170214.log", 4));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170215.log", 5));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170216.log", 6));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "20170217.log", 7));
+    // NOTE: std::async is used to run test in its own thread
+    // NOTE: puts the std::future values (result of async) in a list to wait on later
+    vecThreads.push_back(std::async(std::launch::async, testAis, "nmea_data_sample.txt", 0));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "nmea-sample.txt", 1));
 
+    // wait on all threads to stop
     while (vecThreads.empty() == false)
     {
         auto &result = vecThreads.back();
@@ -111,7 +107,7 @@ void runAndWait()
 int main()
 {
     
-    // just keep on loading files forever
+    // to test - just keep on loading files forever
     for (;;)
     {
         printf("New generation started.\n");

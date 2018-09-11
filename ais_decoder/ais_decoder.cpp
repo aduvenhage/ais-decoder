@@ -106,9 +106,8 @@ unsigned char PayloadBuffer::checkBit() const
 
 
 
-
 /* convert payload to decimal (de-armour) and concatenate 6bit decimal values into payload buffer */
-void AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload)
+int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _iFillBits)
 {
     for (const char ch : _strPayload)
     {
@@ -122,8 +121,9 @@ void AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload)
         // push bits into binary payload buffer
         _buffer.set6bits(iValue);
     }
+    
+    return _strPayload.size() * 6 - _iFillBits;
 }
-
 
 
 /* calc CRC */
@@ -137,8 +137,6 @@ uint8_t AIS::crc(const StringRef &_strPayload)
     
     return crc;
 }
-
-
 
 
 
@@ -177,6 +175,7 @@ bool MultiSentence::isComplete() const
 AisDecoder::AisDecoder(int _iIndex)
     :m_iIndex(_iIndex),
      m_multiSentences{},
+     m_words(MAX_MSG_WORDS),
      m_msgCounts{},
      m_uTotalMessages(0),
      m_uTotalBytes(0),
@@ -185,8 +184,13 @@ AisDecoder::AisDecoder(int _iIndex)
 {}
 
 /* decode Position Report (class A) */
-void AisDecoder::decodeType1(PayloadBuffer &_buffer)
+void AisDecoder::decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
+    if (_iPayloadSizeBits < 168)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
     // decode message fields (binary buffer has to go through all fields, but some fields are not used)
     _buffer.getUnsignedValue(2);                 // repeatIndicator
     auto mmsi = _buffer.getUnsignedValue(30);
@@ -199,12 +203,17 @@ void AisDecoder::decodeType1(PayloadBuffer &_buffer)
     auto cog = _buffer.getSignedValue(12);
     auto heading = _buffer.getSignedValue(9);
     
-    onType1(mmsi, navstatus, rot, sog, posAccuracy, posLon, posLat, cog, heading);
+    onType123(_uMsgType, mmsi, navstatus, rot, sog, posAccuracy, posLon, posLat, cog, heading);
 }
 
 /* decode Base Station Report (type nibble already pulled from buffer) */
-void AisDecoder::decodeType4(PayloadBuffer &_buffer)
+void AisDecoder::decodeType4(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
+    if (_iPayloadSizeBits < 168)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+
     // decode message fields (binary buffer has to go through all fields, but some fields are not used)
     _buffer.getUnsignedValue(2);                 // repeatIndicator
     auto mmsi = _buffer.getUnsignedValue(30);
@@ -222,8 +231,13 @@ void AisDecoder::decodeType4(PayloadBuffer &_buffer)
 }
 
 /* decode Voyage Report (type nibble already pulled from buffer) */
-void AisDecoder::decodeType5(PayloadBuffer &_buffer)
+void AisDecoder::decodeType5(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
+    if (_iPayloadSizeBits < 420)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
     // decode message fields (binary buffer has to go through all fields, but some fields are not used)
     _buffer.getUnsignedValue(2);                 // repeatIndicator
     auto mmsi = _buffer.getUnsignedValue(30);
@@ -248,8 +262,13 @@ void AisDecoder::decodeType5(PayloadBuffer &_buffer)
 }
 
 /* decode Position Report (class B; type nibble already pulled from buffer) */
-void AisDecoder::decodeType18(PayloadBuffer &_buffer)
+void AisDecoder::decodeType18(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
+    if (_iPayloadSizeBits < 168)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
     // decode message fields (binary buffer has to go through all fields, but some fields are not used)
     _buffer.getUnsignedValue(2);                 // repeatIndicator
     auto mmsi = _buffer.getUnsignedValue(30);
@@ -265,8 +284,13 @@ void AisDecoder::decodeType18(PayloadBuffer &_buffer)
 }
 
 /* decode Position Report (class B; type nibble already pulled from buffer) */
-void AisDecoder::decodeType19(PayloadBuffer &_buffer)
+void AisDecoder::decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
+    if (_iPayloadSizeBits < 312)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
     // decode message fields (binary buffer has to go through all fields, but some fields are not used)
     _buffer.getUnsignedValue(2);                 // repeatIndicator
     auto mmsi = _buffer.getUnsignedValue(30);
@@ -291,7 +315,7 @@ void AisDecoder::decodeType19(PayloadBuffer &_buffer)
 }
 
 /* decode Voyage Report and Static Data (type nibble already pulled from buffer) */
-void AisDecoder::decodeType24(PayloadBuffer &_buffer)
+void AisDecoder::decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
     // decode message fields (binary buffer has to go through all fields, but some fields are not used)
     _buffer.getUnsignedValue(2);                 // repeatIndicator
@@ -301,6 +325,11 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer)
     // decode part A
     if (partNo == 0)
     {
+        if (_iPayloadSizeBits < 160)
+        {
+            throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+        }
+        
         auto name = _buffer.getString(120);
         _buffer.getUnsignedValue(8);            // spare
         
@@ -310,6 +339,11 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer)
     // decode part B
     else if (partNo == 1)
     {
+        if (_iPayloadSizeBits < 168)
+        {
+            throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+        }
+        
         auto type = _buffer.getUnsignedValue(8);
         _buffer.getString(18);                       // vendor ID
         _buffer.getUnsignedValue(4);                 // unit model code
@@ -326,11 +360,11 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer)
 }
 
 /* decode Mobile AIS station message */
-void AisDecoder::decodeMobileAisMsg(const StringRef &_strPayload)
+void AisDecoder::decodeMobileAisMsg(const StringRef &_strPayload, int _iFillBits)
 {
     // de-armour string and back bits into buffer
     m_binaryBuffer.resetBitIndex();
-    decodeAscii(m_binaryBuffer, _strPayload);
+    int iBitsUsed = decodeAscii(m_binaryBuffer, _strPayload, _iFillBits);
     m_binaryBuffer.resetBitIndex();
     
     // decode message
@@ -343,37 +377,37 @@ void AisDecoder::decodeMobileAisMsg(const StringRef &_strPayload)
          (msgType == 2) ||
          (msgType == 3) )
     {
-        decodeType1(m_binaryBuffer);
+        decodeType123(m_binaryBuffer, msgType, iBitsUsed);
     }
     
     // base station report
     else if (msgType == 4)
     {
-        decodeType4(m_binaryBuffer);
+        decodeType4(m_binaryBuffer, msgType, iBitsUsed);
     }
     
     // voyage report
     else if (msgType == 5)
     {
-        decodeType5(m_binaryBuffer);
+        decodeType5(m_binaryBuffer, msgType, iBitsUsed);
     }
     
     // position report (class B)
     else if (msgType == 18)
     {
-        decodeType18(m_binaryBuffer);
+        decodeType18(m_binaryBuffer, msgType, iBitsUsed);
     }
     
     // position report (class B)
     else if (msgType == 19)
     {
-        decodeType18(m_binaryBuffer);
+        decodeType19(m_binaryBuffer, msgType, iBitsUsed);
     }
     
     // static data report (class B)
     else if (msgType == 24)
     {
-        decodeType24(m_binaryBuffer);
+        decodeType24(m_binaryBuffer, msgType, iBitsUsed);
     }
     
     // message not decoded
@@ -390,8 +424,17 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
     if (n != StringRef::npos)
     {
         int iCrc = (int)std::strtol(_strPayload.data() + n + 1, nullptr, 16);
-        int iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
-        return iCrc == iCrcCalc;
+        
+        if (*_strPayload.data() == '!')
+        {
+            int iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
+            return iCrc == iCrcCalc;
+        }
+        else
+        {
+            int iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), n));
+            return iCrc == iCrcCalc;
+        }
     }
     else
     {
@@ -399,7 +442,8 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
     }
 }
 
-/* decode next message (starts reading from input buffer with the specified offset; returns the number of bytes processed) */
+
+/* decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed) */
 size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset)
 {
     // process and decode AIS strings
@@ -411,98 +455,118 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         if (checkCrc(strLine) == true)
         {
             // decode sentence
-            m_words.clear();
-            seperate(m_words, strLine);
-            if (m_words.empty() == false)
+            size_t uWordCount = seperate(m_words, strLine);
+            
+            // \todo What AIS talker IDs (words[0]) should we support? For now just allowing all of them..
+            bool bValidMsg = (uWordCount >= 7) &&
+                             (m_words[5].size() > 1) &&
+                             (m_words[5].size() <= MAX_MSG_PAYLOAD_LENGTH);
+            
+            // try to decode sentence
+            if (bValidMsg == true)
             {
-                // try to decode message
-                // \todo what AIS talker IDs (words[0]) should we support?
-                bool bValidMsg = m_words.size() >= 7;
-                if (bValidMsg == true)
+                int iFragmentCount = strtoi(m_words[1]);
+                int iFillBits = strtoi(m_words[6]);
+
+                // check for valid sentence
+                if ( (iFragmentCount == 0) || (iFragmentCount > MAX_MSG_FRAGMENTS) )
                 {
-                    int iFragmentCount = strtoi(m_words[1]);
+                    m_uDecodingErrors++;
+                    onDecodeError(strLine, "Invalid fragment count value (" + std::to_string(iFragmentCount) + ").");
+                }
                     
-                    // decode simple sentence
-                    if (iFragmentCount == 1)
+                // decode simple sentence
+                else if (iFragmentCount == 1)
+                {
+                    try
                     {
-                        try
-                        {
-                            onMessage(strLine);
-                            decodeMobileAisMsg(m_words[5]);
-                        }
-                        catch (std::exception &ex)
-                        {
-                            m_uDecodingErrors++;
-                            onDecodeError(strLine, ex.what());
-                        }
+                        onMessage(strLine);
+                        decodeMobileAisMsg(m_words[5], iFillBits);
+                    }
+                    catch (std::exception &ex)
+                    {
+                        m_uDecodingErrors++;
+                        onDecodeError(strLine, ex.what());
+                    }
+                }
+                
+                // build up multi sentence payloads
+                else if (iFragmentCount > 1)
+                {
+                    int iMsgId = strtoi(m_words[3]);
+                    int iFragmentNum = strtoi(m_words[2]);
+
+                    // check for valid message
+                    if (iMsgId >= (int)m_multiSentences.size())
+                    {
+                        m_uDecodingErrors++;
+                        onDecodeError(strLine, "Invalid message sequence id (" + std::to_string(iMsgId) + ").");
                     }
                     
-                    // build up multi sentence payloads
-                    else if (iFragmentCount > 1)
+                    // check for valid message
+                    else if ( (iFragmentNum == 0) || (iFragmentNum > iFragmentCount) )
                     {
-                        int iMsgId = strtoi(m_words[3]);
-                        int iFragmentNum = strtoi(m_words[2]);
-                        
-                        if (iMsgId > (int)m_multiSentences.size())
+                        m_uDecodingErrors++;
+                        onDecodeError(strLine, "Invalid message fragment number (" + std::to_string(iFragmentNum) + ").");
+                    }
+                    
+                    // create multi-sentence object with first message
+                    else if (iFragmentNum == 1)
+                    {
+                        m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5]);
+                    }
+                    
+                    // update multi-sentence object with more fragments
+                    else
+                    {
+                        // add to existing payload
+                        auto &pMultiSentence = m_multiSentences[iMsgId];
+                        if (pMultiSentence != nullptr)
                         {
-                            m_uDecodingErrors++;
-                            onDecodeError(strLine, std::string("Invalid message sequence id (") + std::to_string(iMsgId) + std::string(")."));
-                        }
-                        else if (iFragmentNum == 1)
-                        {
-                            // first sentence
-                            m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5]);
-                        }
-                        else
-                        {
-                            // add to existing payload
-                            auto &pMultiSentence = m_multiSentences[iMsgId];
-                            if (pMultiSentence != nullptr)
+                            // add new fragment and check for any message payload/fragment errors
+                            bool bSuccess = pMultiSentence->addFragment(iFragmentNum, m_words[5]);
+                            
+                            if (bSuccess == true)
                             {
-                                // add new fragment and check for any message payload/fragment errors
-                                bool bSuccess = pMultiSentence->addFragment(iFragmentNum, m_words[5]);
-                                if (bSuccess == true)
+                                // check if all fragments have been received
+                                if (pMultiSentence->isComplete() == true)
                                 {
-                                    // check if all fragments have been received
-                                    if (pMultiSentence->isComplete() == true)
+                                    // decode whole payload and reset
+                                    try
                                     {
-                                        // decode whole payload and reset
-                                        try
-                                        {
-                                            onMessage(strLine);
-                                            decodeMobileAisMsg(pMultiSentence->toString());
-                                        }
-                                        catch (std::exception &ex)
-                                        {
-                                            m_uDecodingErrors++;
-                                            onDecodeError(strLine, ex.what());
-                                        }
-                                        
-                                        m_multiSentences[iMsgId] = nullptr;
+                                        onMessage(pMultiSentence->toString());
+                                        decodeMobileAisMsg(pMultiSentence->toString(), iFillBits);
                                     }
-                                }
-                                else
-                                {
-                                    // sentence error, so just reset
-                                    m_uDecodingErrors++;
+                                    catch (std::exception &ex)
+                                    {
+                                        m_uDecodingErrors++;
+                                        onDecodeError(pMultiSentence->toString(), ex.what());
+                                    }
+                                    
                                     m_multiSentences[iMsgId] = nullptr;
-                                    onDecodeError(strLine, "Multi-sentence decoding failed.");
                                 }
+                            }
+                            else
+                            {
+                                // sentence error, so just reset
+                                m_uDecodingErrors++;
+                                m_multiSentences[iMsgId] = nullptr;
+                                onDecodeError(strLine, "Multi-sentence decoding failed.");
                             }
                         }
                     }
-                    else
-                    {
-                        m_uDecodingErrors++;
-                        onDecodeError(strLine, "Invalid fragment count value (0).");
-                    }
                 }
+            }
+            else
+            {
+                m_uDecodingErrors++;
+                onDecodeError(strLine, "Sentence not a valid.");
             }
         }
         else
         {
             m_uCrcErrors++;
-            onDecodeError(strLine, "Message decoding error. CRC check failed.");
+            onDecodeError(strLine, "Sentence decoding error. CRC check failed.");
         }
         
         m_uTotalBytes += n;

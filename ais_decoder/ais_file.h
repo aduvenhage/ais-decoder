@@ -60,6 +60,8 @@ namespace AIS
      
      _progressCb is called after the processing of each block. It should have the signature: func(size_t _uTotalBytesReadFromFile, const AIS::AisDecoder &_decoder)
      
+     NOTE: will throw std::exception on file open/read error.
+     
      */
     template <typename progress_func_t>
     void processAisFile(const std::string &_strLogPath, AIS::AisDecoder &_decoder, size_t _uBlockSize, progress_func_t &_progressCb)
@@ -107,6 +109,10 @@ namespace AIS
             }
             
             fclose(pFileIn);
+        }
+        else
+        {
+            throw std::runtime_error("Failed to open file '" + _strLogPath + "' for reading!");
         }
     }
 

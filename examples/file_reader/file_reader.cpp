@@ -17,7 +17,7 @@ class AisDummyDecoder : public AIS::AisDecoder
     {}
     
  protected:
-    virtual void onType1(unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
+    virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
     
     virtual void onType4(unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
                          bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {}
@@ -41,7 +41,10 @@ class AisDummyDecoder : public AIS::AisDecoder
     
     virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
     
-    virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {printf("%s\n", _strError.c_str());}
+    virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
+        std::string msg = _strMessage;
+        printf("%s [%s]\n", _strError.c_str(), msg.c_str());
+    }
 };
 
 
@@ -60,7 +63,7 @@ void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
  */
 void testAis(const std::string &_strLogPath)
 {
-    const size_t BLOCK_SIZE = 1024 * 4;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 8;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
     AisDummyDecoder decoder;
@@ -81,10 +84,23 @@ void testAis(const std::string &_strLogPath)
  */
 int main()
 {
-    // just keep on loading files forever
+    // to test - just keep on loading files forever
     for (;;)
     {
-        testAis("nmea_data_sample.txt");
+        testAis("LSS_20180514.ITU123_data.bu1");
+
+        /*
+        testAis("20170210.log");
+        testAis("20170211.log");
+        testAis("20170212.log");
+        testAis("20170213.log");
+        testAis("20170214.log");
+        testAis("20170215.log");
+        testAis("20170216.log");
+        testAis("20170217.log");
+        testAis("20170218.log");
+        testAis("20170219.log");
+        */
     }
 
     return 0;

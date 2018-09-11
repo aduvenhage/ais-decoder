@@ -145,13 +145,14 @@ namespace AIS
         {}
         
         const char *data() const {return m_psRef;}
-        const char *c_str() const {return m_psRef;}
 
         size_t size() const {return m_uSize;}
         bool empty() const {return m_uSize == 0;}
         
         const char *begin() const {return m_psRef;}
         const char *end() const {return m_psRef + m_uSize;}
+        
+        StringRef &assign(const char *_psRef, size_t _uSize) {m_psRef = _psRef; m_uSize = _uSize; return *this;}
         
         operator std::string () const {return std::string(m_psRef, m_psRef + m_uSize);}
 
@@ -226,19 +227,21 @@ namespace AIS
          Separate input string into words using commas.
          Removes spaces from start and end of words.
      */
-    inline void seperate(std::vector<StringRef> &_output, const StringRef &_strInput)
+    inline size_t seperate(std::vector<StringRef> &_output, const StringRef &_strInput)
 	{
         const char *pWordStart = _strInput.data();
         const char *pWordEnd = pWordStart;
         const char *pCh = pWordStart;
         const char *pChEnd = pWordStart + _strInput.size();
+        size_t uWordCount = 0;
 
-        while (pCh < pChEnd)
+        while ( (pCh < pChEnd) &&
+                (uWordCount < _output.size()) )
         {
             const char ch = *pCh;
             
             if ( (pCh == pWordStart) &&
-                 (ascii_isspace(ch) == true) )
+                 (ch == ' ') )
             {
                 pCh++;
                 pWordEnd++;
@@ -246,7 +249,8 @@ namespace AIS
             }
             else if (ch == ',')
             {
-                _output.emplace_back(pWordStart, pWordEnd - pWordStart);
+                _output[uWordCount].assign(pWordStart, pWordEnd - pWordStart);
+                uWordCount++;
 
                 pCh++;
                 pWordStart = pCh;
@@ -256,7 +260,7 @@ namespace AIS
             {
                 pCh++;
                 
-                if (ascii_isspace(ch) == false)
+                if (ch != ' ')
                 {
                     pWordEnd = pCh;
                 }
@@ -265,8 +269,11 @@ namespace AIS
         
         if (pWordEnd > pWordStart)
         {
-            _output.emplace_back(pWordStart, pWordEnd - pWordStart);
+            _output[uWordCount].assign(pWordStart, pWordEnd - pWordStart);
+            uWordCount++;
         }
+        
+        return uWordCount;
 	}
     
     

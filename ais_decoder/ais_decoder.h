@@ -22,7 +22,8 @@ namespace AIS
     class PayloadBuffer
     {
      private:
-        const static int MAX_PAYLOAD_SIZE = 128;      ///< NOTE: no boundary checking is done on buffer
+        /// NOTE: the max payload size could be up to '(5 fragments * 82 chars * 6bits / 8) = 308' bytes
+        const static int MAX_PAYLOAD_SIZE = 512;
         
      public:
         PayloadBuffer();
@@ -69,8 +70,8 @@ namespace AIS
     };
     
     
-    /// convert payload to decimal (de-armour) and concatenate 6bit decimal values into payload buffer
-    void decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload);
+    /// Convert payload to decimal (de-armour) and concatenate 6bit decimal values into payload buffer. Returns the number of bits used.
+    int decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _iFillBits);
     
     /// calc CRC
     uint8_t crc(const StringRef &_strPayload);
@@ -109,7 +110,10 @@ namespace AIS
     {
      private:
         const static int MAX_MSG_SEQUENCE_IDS      = 10;       ///< max multi-sentience message sequences
-        const static int MAX_MSG_COUNT             = 64;       ///< max message type count (unique messsage IDs)
+        const static int MAX_MSG_TYPES             = 64;       ///< max message type count (unique messsage IDs)
+        const static int MAX_MSG_PAYLOAD_LENGTH    = 82;       ///< max payload length (NMEA limit)
+        const static int MAX_MSG_FRAGMENTS         = 5;        ///< maximum number of fragments/sentences a message can have
+        const static int MAX_MSG_WORDS             = 10;       ///< maximum number of words per sentence
 
      public:
         AisDecoder(int _iIndex = 0);
@@ -117,7 +121,7 @@ namespace AIS
         /// returns the user defined index
         int index() const {return m_iIndex;}
         
-        /// decode next message (starts reading from input buffer with the specified offset; returns the number of bytes processed)
+        /// decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed)
         size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
         
         /// returns the total number of messages processed
@@ -136,7 +140,7 @@ namespace AIS
         uint64_t getDecodingErrorCount() const {return m_uDecodingErrors;}
         
      protected:
-        virtual void onType1(unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
+        virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
         virtual void onType4(unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
                              bool _bPosAccuracy, int _iPosLon, int _iPosLat) = 0;
         virtual void onType5(unsigned int _uMmsi, unsigned int _uImo, const std::string &_strCallsign, const std::string &_strName,
@@ -154,7 +158,7 @@ namespace AIS
         
         virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) = 0;
         
-        /// called on every message, before onTypeXX specific message
+        /// called on every full message, before onTypeXX specific message
         virtual void onMessage(const StringRef &_strPayload) = 0;
         
         /// called when message type is not supported (i.e. onTypeXX not implemented), and onMessage(...) is still called
@@ -168,25 +172,25 @@ namespace AIS
         bool checkCrc(const StringRef &_strPayload);
         
         /// decode Mobile AIS station message
-        void decodeMobileAisMsg(const StringRef &_strPayload);
+        void decodeMobileAisMsg(const StringRef &_strPayload, int _iFillBits);
         
         /// decode Position Report (class A; type nibble already pulled from buffer)
-        void decodeType1(PayloadBuffer &_buffer);
+        void decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Base Station Report (type nibble already pulled from buffer)
-        void decodeType4(PayloadBuffer &_buffer);
+        void decodeType4(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Voyage Report and Static Data (type nibble already pulled from buffer)
-        void decodeType5(PayloadBuffer &_buffer);
+        void decodeType5(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Position Report (class B; type nibble already pulled from buffer)
-        void decodeType18(PayloadBuffer &_buffer);
+        void decodeType18(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Position Report (class B; type nibble already pulled from buffer)
-        void decodeType19(PayloadBuffer &_buffer);
+        void decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Voyage Report and Static Data (type nibble already pulled from buffer)
-        void decodeType24(PayloadBuffer &_buffer);
+        void decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
     private:
         int                                                                     m_iIndex;               ///< arbitrary id/index set by user for this decoder
@@ -194,7 +198,7 @@ namespace AIS
         std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;
         std::vector<StringRef>                                                  m_words;
         
-        std::array<uint64_t, MAX_MSG_COUNT>                                     m_msgCounts;            ///< message counts per message type
+        std::array<uint64_t, MAX_MSG_TYPES>                                     m_msgCounts;            ///< message counts per message type
         uint64_t                                                                m_uTotalMessages;
         uint64_t                                                                m_uTotalBytes;
         uint64_t                                                                m_uCrcErrors;           ///< CRC check error count
