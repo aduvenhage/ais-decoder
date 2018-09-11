@@ -10,18 +10,18 @@ Some time was also spent on improving the speed of the NMEA string processing to
 
 
 ## Checklist
-[x] Basic payload 6bit nibble stuffing and unpacking
-[x] ASCII de-armouring
-[x] CRC checking
-[x] Multi-Sentence message handling
-[x] Decoder base class
-[x] Support types 1, 2, 3, 4, 5, 18, 19, 24 -- position reports and static info
-[x] Validate payload sizes (reject messages, where type and size does not match)
-[x] Build-up message stats (bytes processed, messages processed, etc.)
-[x] Profile and improve speed 
-[x] Validate fragment count and number values
+- [x] Basic payload 6bit nibble stuffing and unpacking
+- [x] ASCII de-armouring
+- [x] CRC checking
+- [x] Multi-Sentence message handling
+- [x] Decoder base class
+- [x] Support types 1, 2, 3, 4, 5, 18, 19, 24 -- position reports and static info
+- [x] Validate payload sizes (reject messages, where type and size does not match)
+- [x] Build-up message stats (bytes processed, messages processed, etc.)
+- [x] Profile and improve speed 
+- [x] Validate fragment count and number values
 
-[ ] Validate talker IDs
+- [ ] Validate talker IDs
 
 ## Build
 This project uses CMAKE to build.  To build through command line on linux, do the following:
