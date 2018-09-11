@@ -22,6 +22,7 @@ Some time was also spent on improving the speed of the NMEA string processing to
 - [x] Validate fragment count and number values
 
 - [ ] Validate talker IDs
+- [ ] Investigate faster ascii de-armouring and bit packing techniques
 
 ## Build
 This project uses CMAKE to build.  To build through command line on linux, do the following:
