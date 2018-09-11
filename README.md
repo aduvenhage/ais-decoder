@@ -9,6 +9,20 @@ The current 'onTypeXX(...)' message callback are unique for each message type (t
 Some time was also spent on improving the speed of the NMEA string processing to see how quickly NMEA logs could be processed.  Currently the multi-threaded file reading examples (running a thread per file) achieve more than 500k NMEA messages per second, per thread.  When running on multiple logs concurrently (8 threads is a good number on modern hardware) 4M+ NMEA messages per second is possible.  During testing it was also found that most of the time was spent on the 6bit nibble packing and unpacking, not the file IO.
 
 
+## Checklist
+[x] Basic payload 6bit nibble stuffing and unpacking
+[x] ASCII de-armouring
+[x] CRC checking
+[x] Multi-Sentence message handling
+[x] Decoder base class
+[x] Support types 1, 2, 3, 4, 5, 18, 19, 24 -- position reports and static info
+[x] Validate payload sizes (reject messages, where type and size does not match)
+[x] Build-up message stats (bytes processed, messages processed, etc.)
+[x] Profile and improve speed 
+[x] Validate fragment count and number values
+
+[ ] Validate talker IDs
+
 ## Build
 This project uses CMAKE to build.  To build through command line on linux, do the following:
 
