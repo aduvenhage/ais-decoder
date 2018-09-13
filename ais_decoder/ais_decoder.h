@@ -31,8 +31,8 @@ namespace AIS
         /// set bit index back to zero
         void resetBitIndex();
         
-        /// pack 6 bits (most significant bit first)
-        void set6bits(char _iValue);
+        /// set bit index back to zero and clear buffer contents
+        void clearBuffer();
         
         /// unpack next _iBits (most significant bit is packed first)
         unsigned int getUnsignedValue(int _iBits);
@@ -49,21 +49,10 @@ namespace AIS
         /// unback string (6 bit characters)
         std::string getString(int _iNumBits);
         
-     private:
-        /// pack single bit and advance bit index
-        void setBit(char _iState);
-        
-        /// test next bit
-        unsigned char checkBit() const;
-        
-        /// test next bit and advance bit index
-        unsigned char getBit()
-        {
-            const unsigned char iState = checkBit();
-            m_iBitIndex++;
-            return iState;
+        unsigned char* getData(void) {
+            return &m_data[0];
         }
-
+        
      private:
         std::array<unsigned char, MAX_PAYLOAD_SIZE>       m_data;
         int32_t                                           m_iBitIndex;
