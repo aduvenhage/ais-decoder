@@ -23,13 +23,11 @@ unsigned int PayloadBuffer::getUnsignedValue(int _iBits)
 {  
     const unsigned char *lptr = &m_data[m_iBitIndex >> 3];
     uint64_t bits;
-
-    if (_iBits <= 9) {
-        bits = (uint64_t)lptr[0] << 40;
-        bits |= (uint64_t)lptr[1] << 32;
-    } else {
-        bits = (uint64_t)lptr[0] << 40;
-        bits |= (uint64_t)lptr[1] << 32;
+    
+    bits = (uint64_t)lptr[0] << 40;
+    bits |= (uint64_t)lptr[1] << 32;
+    
+    if (_iBits > 9) {
         bits |= (unsigned int)lptr[2] << 24;
         bits |= (unsigned int)lptr[3] << 16;
         bits |= (unsigned int)lptr[4] << 8;
@@ -49,10 +47,10 @@ int PayloadBuffer::getSignedValue(int _iBits)
     const unsigned char *lptr = &m_data[m_iBitIndex >> 3];
     uint64_t bits;
 
-    if (_iBits <= 9) {
-        bits = (uint64_t)lptr[0] << 40;
-        bits |= (uint64_t)lptr[1] << 32;
-    } else {
+    bits = (uint64_t)lptr[0] << 40;
+    bits |= (uint64_t)lptr[1] << 32;
+    
+    if (_iBits > 9) {
         bits = (uint64_t)lptr[0] << 40;
         bits |= (uint64_t)lptr[1] << 32;
         bits |= (unsigned int)lptr[2] << 24;
