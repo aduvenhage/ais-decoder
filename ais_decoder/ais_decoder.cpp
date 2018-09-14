@@ -7,25 +7,15 @@
 
 using namespace AIS;
 
-
 PayloadBuffer::PayloadBuffer()
     :m_data{},
      m_iBitIndex(0)
-{ 
-    clearBuffer();
-}
+{}
 
 /* set bit index back to zero */
 void PayloadBuffer::resetBitIndex()
 {
     m_iBitIndex = 0;
-}
-
-/* set bit index back to zero and clear buffer */
-void PayloadBuffer::clearBuffer()
-{
-    m_iBitIndex = 0;
-    memset(&m_data[0], 0, MAX_PAYLOAD_SIZE);
 }
 
 /* unpack next _iBits (most significant bit is packed first) */
@@ -74,7 +64,6 @@ int PayloadBuffer::getSignedValue(int _iBits)
 
     m_iBitIndex += _iBits;
 
-    // we're done, return data
     return (int64_t(bits) >> (64 - _iBits));
 }
 
@@ -100,30 +89,59 @@ std::string PayloadBuffer::getString(int _iNumBits)
 int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _iFillBits)
 {
     static const unsigned char dLUT[256] = {
-        128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
-        128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,
         17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,32,33,34,35,36,37,38,39,40,33,34,35,36,37,38,39,40,
-        41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,128,128,128,128,128,128,128,128,128,
-        128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
-        128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
-        128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,
-        128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128,128
+        41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62,63,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     };
     
     
     const char* in_ptr = _strPayload.data();
     const char* in_sentinel = in_ptr + _strPayload.size();
+    const char* in_sentinel4 = in_ptr + _strPayload.size() - (_strPayload.size() & 3);
     unsigned char* out_ptr = _buffer.getData();
     
-    constexpr unsigned int nbits = 6;
+    
     uint64_t accumulator = 0;
     unsigned int acc_bitcount = 0;
     
-    uint64_t armour_check = 0;
+    while (in_ptr < in_sentinel4) {
+        uint64_t val = (dLUT[*in_ptr] << 18) | (dLUT[*(in_ptr+1)] << 12) | (dLUT[*(in_ptr+2)] << 6) | dLUT[*(in_ptr+3)];
+        
+        constexpr unsigned int nbits = 24;
+        
+        int remainder = int(64 - acc_bitcount) - nbits;
+        if (remainder <= 0) {
+            // accumulator will fill up, commit to output buffer
+            accumulator |= (uint64_t(val) >> -remainder);
+            *((uint64_t*)out_ptr) = __builtin_bswap64(accumulator);
+            out_ptr += 8;
+            
+            if (remainder < 0) { 
+                accumulator = uint64_t(val) << (64 + remainder); // remainder is negative
+                acc_bitcount = -remainder;
+            } else {
+                accumulator = 0;  // shifting right by 64 bits (above) does not yield zero?
+                acc_bitcount = 0; 
+            }
+            
+        } else {
+            // we still have enough room in the accumulator
+            accumulator |= uint64_t(val) << (64 - acc_bitcount - nbits);
+            acc_bitcount += nbits;
+        }
+        
+        in_ptr += 4;
+    }
     
     while (in_ptr < in_sentinel) {
         uint64_t val = dLUT[*in_ptr];
-        armour_check |= val;
+        
+        constexpr unsigned int nbits = 6;
         
         int remainder = int(64 - acc_bitcount) - nbits;
         if (remainder <= 0) {
@@ -148,15 +166,7 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
         
         in_ptr++;
     }
-    
     *((uint64_t*)out_ptr) = __builtin_bswap64(accumulator);
-    // strictly speaking, we should update m_iBitIndex, but since we only write to
-    // the payload buffer once (ever), we can ommit this step
-    
-    // TODO: use something more elegant to report this error
-    if ((armour_check & 128) == 128) {
-        printf("Armour check failed\n");
-    }
     
     return _strPayload.size() * 6 - _iFillBits;
 }
@@ -237,7 +247,7 @@ void AisDecoder::decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, i
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
     auto cog = _buffer.getSignedValue(12);
-    auto heading = _buffer.getSignedValue(9);
+    auto heading = _buffer.getUnsignedValue(9);
     
     onType123(_uMsgType, mmsi, navstatus, rot, sog, posAccuracy, posLon, posLat, cog, heading);
 }
@@ -389,7 +399,8 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, in
         auto toStern = _buffer.getUnsignedValue(9);
         auto toPort = _buffer.getUnsignedValue(6);
         auto toStarboard = _buffer.getUnsignedValue(6);
-        _buffer.getUnsignedValue(30);                // Mothership MMSI
+        // FvdB: Note that this field overlaps the previous 4 fields, total message length is 162 bits
+        // _buffer.getUnsignedValue(30);                // Mothership MMSI
         
         onType24B(mmsi, callsign, type, toBow, toStern, toPort, toStarboard);
     }
@@ -399,7 +410,7 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, in
 void AisDecoder::decodeMobileAisMsg(const StringRef &_strPayload, int _iFillBits)
 {
     // de-armour string and back bits into buffer
-    m_binaryBuffer.clearBuffer();
+    m_binaryBuffer.resetBitIndex();
     int iBitsUsed = decodeAscii(m_binaryBuffer, _strPayload, _iFillBits);
     m_binaryBuffer.resetBitIndex();
     

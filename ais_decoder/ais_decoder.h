@@ -31,9 +31,6 @@ namespace AIS
         /// set bit index back to zero
         void resetBitIndex();
         
-        /// set bit index back to zero and clear buffer contents
-        void clearBuffer();
-        
         /// unpack next _iBits (most significant bit is packed first)
         unsigned int getUnsignedValue(int _iBits);
         
