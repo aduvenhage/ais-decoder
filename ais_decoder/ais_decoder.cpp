@@ -173,11 +173,19 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
 /* calc CRC */
 uint8_t AIS::crc(const StringRef &_strPayload)
 {
-    uint8_t crc = 0;
-    for (const char ch : _strPayload)
-    {
-        crc ^= (uint8_t)ch;
+    unsigned char* in_ptr = (unsigned char*)_strPayload.data();
+    const unsigned char* in_sentinel  = in_ptr + _strPayload.size();
+    const unsigned char* in_sentinel4 = in_sentinel - (_strPayload.size() & 3);
+    
+    uint32_t crc4 = 0;
+    while (in_ptr < in_sentinel4) {
+        crc4 ^= *((uint32_t*)in_ptr);
+        in_ptr += 4;
     }
+    while (in_ptr < in_sentinel) {
+        crc4 ^= *in_ptr++;
+    }
+    uint8_t crc = (crc4 & 0xff) ^ ((crc4 >> 8) & 0xff) ^ ((crc4 >> 16) & 0xff) ^ ((crc4 >> 24) & 0xff);
     
     return crc;
 }
@@ -468,16 +476,24 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
     size_t n = findLastOf(_strPayload, '*');
     if (n != StringRef::npos)
     {
-        int iCrc = (int)std::strtol(_strPayload.data() + n + 1, nullptr, 16);
+        // for some reason the std::strol function is quite slow, so just conver the checksum manually
+        const uint16_t ascii_t[32] = {
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+            257, 257, 257, 257, 257, 257, 257,
+            10, 11, 12, 13, 14, 15, 
+            257, 257, 257, 257, 257, 257, 257, 257, 257
+        };
+        
+        int iCrc = ascii_t[(_strPayload.data()[n+1] - '0') & 31]*16 + ascii_t[(_strPayload.data()[n+2] - '0') & 31];
         
         if (*_strPayload.data() == '!')
         {
-            int iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
+            unsigned iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
             return iCrc == iCrcCalc;
         }
         else
         {
-            int iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), n));
+            unsigned iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), n));
             return iCrc == iCrcCalc;
         }
     }
@@ -510,8 +526,8 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
             // try to decode sentence
             if (bValidMsg == true)
             {
-                int iFragmentCount = strtoi(m_words[1]);
-                int iFillBits = strtoi(m_words[6]);
+                int iFragmentCount = single_digit_strtoi(m_words[1]);
+                int iFillBits = single_digit_strtoi(m_words[6]);
 
                 // check for valid sentence
                 if ( (iFragmentCount == 0) || (iFragmentCount > MAX_MSG_FRAGMENTS) )
@@ -539,7 +555,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                 else if (iFragmentCount > 1)
                 {
                     int iMsgId = strtoi(m_words[3]);
-                    int iFragmentNum = strtoi(m_words[2]);
+                    int iFragmentNum = single_digit_strtoi(m_words[2]);
 
                     // check for valid message
                     if (iMsgId >= (int)m_multiSentences.size())

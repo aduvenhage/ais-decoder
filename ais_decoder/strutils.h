@@ -189,6 +189,13 @@ namespace AIS
         return (int)std::strtol(_str.data(), nullptr, 10);
     }
     
+    /// Converts a single-digit string to an integer. Quick and dirty with no error checking, but guaranteed to at
+    /// least clamp the result to the range [0,9]
+    inline int single_digit_strtoi(const StringRef &_str)
+    {
+        return ((_str.data()[0] - '0') & 0x0f) % 10;
+    }
+    
     /**
          Appends first line of text from input, starting at _uOffset (works with "\n" and "\r\n").
          Returns the number of bytes processed (EOL chars are not included in output, but counted).
