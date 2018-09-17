@@ -207,28 +207,19 @@ namespace AIS
         const char *pData = _pInput + _uOffset;
         const char *pCh = pData;
         
-        for (size_t i = 0; i < n; i++)
-        {
-            const char ch = *pCh++;
-
-            if (ch == '\n')
-            {
-                if (chCount > 0)
-                {
-                    _strOutput = StringRef(pData, chCount);
-                }
-                
-                return i + 1;
-            }
-            else if (ch != '\r')
-            {
-                chCount++;
-            }
+        const char* sentinel = pData + n;
+        const char* next = (const char*)memchr(pData, '\n', n);
+        
+        if (next == NULL || next >= sentinel) {
+            return 0;
+        } else {
+            chCount = next - pData - (*(next-1) == '\r' ? 1 : 0);
+            _strOutput = StringRef(pData, chCount);
+            return (next - pData) + 1;
         }
 
         return 0;
     }
-    
     
  	/**
          Separate input string into words using commas.
@@ -236,48 +227,34 @@ namespace AIS
      */
     inline size_t seperate(std::vector<StringRef> &_output, const StringRef &_strInput)
 	{
-        const char *pWordStart = _strInput.data();
-        const char *pWordEnd = pWordStart;
-        const char *pCh = pWordStart;
-        const char *pChEnd = pWordStart + _strInput.size();
+        const char *pCh = _strInput.data();
+        const char *pChEnd = pCh + _strInput.size();
         size_t uWordCount = 0;
-
-        while ( (pCh < pChEnd) &&
-                (uWordCount < _output.size()) )
-        {
-            const char ch = *pCh;
-            
-            if ( (pCh == pWordStart) &&
-                 (ch == ' ') )
-            {
-                pCh++;
-                pWordEnd++;
-                pWordStart++;
-            }
-            else if (ch == ',')
-            {
-                _output[uWordCount].assign(pWordStart, pWordEnd - pWordStart);
-                uWordCount++;
-
-                pCh++;
-                pWordStart = pCh;
-                pWordEnd = pCh;
-            }
-            else
-            {
-                pCh++;
-                
-                if (ch != ' ')
-                {
-                    pWordEnd = pCh;
-                }
-            }
-        }
         
-        if (pWordEnd > pWordStart)
-        {
-            _output[uWordCount].assign(pWordStart, pWordEnd - pWordStart);
+        while ( (pCh < pChEnd) &&
+                (uWordCount < _output.size()) ) {
+                
+            const char* next =  (const char*)memchr(pCh, ',', pChEnd - pCh);
+            if (next == NULL || next > pChEnd) {
+                // no comma found, assume we are in the last word
+                next = pChEnd + 1;
+            }
+            // word is bounded by pCh and next
+            while (*pCh == ' ') { // strip off leading spaces
+                pCh++;
+            }
+            const char* wend = next - 1;
+            if (*wend == '\r') { // strip off CR if present
+                wend--;
+            }
+            while (wend >= pCh && *wend == ' ') { // strip off trailing spaces
+                wend--;
+            }
+            
+            _output[uWordCount].assign(pCh, wend - pCh + 1);
             uWordCount++;
+
+            pCh = next + 1; // continue after comma
         }
         
         return uWordCount;
