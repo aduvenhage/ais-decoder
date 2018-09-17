@@ -205,7 +205,6 @@ namespace AIS
         size_t chCount = 0;
         const size_t n = _uInputSize - _uOffset;
         const char *pData = _pInput + _uOffset;
-        const char *pCh = pData;
         
         const char* sentinel = pData + n;
         const char* next = (const char*)memchr(pData, '\n', n);

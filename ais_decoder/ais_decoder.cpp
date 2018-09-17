@@ -98,9 +98,9 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
     };
     
     
-    const char* in_ptr = _strPayload.data();
-    const char* in_sentinel = in_ptr + _strPayload.size();
-    const char* in_sentinel4 = in_ptr + _strPayload.size() - (_strPayload.size() & 3);
+    const unsigned char* in_ptr = (unsigned char*)_strPayload.data();
+    const unsigned char* in_sentinel = in_ptr + _strPayload.size();
+    const unsigned char* in_sentinel4 = in_ptr + _strPayload.size() - 4;
     unsigned char* out_ptr = _buffer.getData();
     
     
@@ -171,21 +171,28 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
 
 
 /* calc CRC */
+#ifdef __GNUG__
+    #ifndef __clang__
+        __attribute__((optimize("no-tree-vectorize")))
+    #endif
+#endif
 uint8_t AIS::crc(const StringRef &_strPayload)
 {
-    unsigned char* in_ptr = (unsigned char*)_strPayload.data();
+    const unsigned char* in_ptr = (const unsigned char*)_strPayload.data();
     const unsigned char* in_sentinel  = in_ptr + _strPayload.size();
-    const unsigned char* in_sentinel4 = in_sentinel - (_strPayload.size() & 3);
+    const unsigned char* in_sentinel4 = in_ptr + _strPayload.size() - 4;
     
     uint32_t crc4 = 0;
     while (in_ptr < in_sentinel4) {
         crc4 ^= *((uint32_t*)in_ptr);
         in_ptr += 4;
     }
-    while (in_ptr < in_sentinel) {
-        crc4 ^= *in_ptr++;
-    }
+    
     uint8_t crc = (crc4 & 0xff) ^ ((crc4 >> 8) & 0xff) ^ ((crc4 >> 16) & 0xff) ^ ((crc4 >> 24) & 0xff);
+    
+    while (in_ptr < in_sentinel) {
+        crc ^= *in_ptr++;
+    }
     
     return crc;
 }
@@ -484,16 +491,16 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
             257, 257, 257, 257, 257, 257, 257, 257, 257
         };
         
-        int iCrc = ascii_t[(_strPayload.data()[n+1] - '0') & 31]*16 + ascii_t[(_strPayload.data()[n+2] - '0') & 31];
+        uint16_t iCrc = ascii_t[(_strPayload.data()[n+1] - '0') & 31]*16 + ascii_t[(_strPayload.data()[n+2] - '0') & 31];
         
         if (*_strPayload.data() == '!')
         {
-            unsigned iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
+            uint16_t iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
             return iCrc == iCrcCalc;
         }
         else
         {
-            unsigned iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), n));
+            uint16_t iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), n));
             return iCrc == iCrcCalc;
         }
     }
