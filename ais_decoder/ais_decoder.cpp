@@ -100,7 +100,7 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
     
     const unsigned char* in_ptr = (unsigned char*)_strPayload.data();
     const unsigned char* in_sentinel = in_ptr + _strPayload.size();
-    const unsigned char* in_sentinel4 = in_ptr + _strPayload.size() - 4;
+    const unsigned char* in_sentinel4 = in_sentinel - 4;
     unsigned char* out_ptr = _buffer.getData();
     
     
@@ -175,7 +175,7 @@ uint8_t AIS::crc(const StringRef &_strPayload)
 {
     const unsigned char* in_ptr = (const unsigned char*)_strPayload.data();
     const unsigned char* in_sentinel  = in_ptr + _strPayload.size();
-    const unsigned char* in_sentinel4 = in_ptr + _strPayload.size() - 4;
+    const unsigned char* in_sentinel4 = in_sentinel - 4;
     
     uint8_t checksum = 0;
     while ((intptr_t(in_ptr) & 3) && in_ptr < in_sentinel) {

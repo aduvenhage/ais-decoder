@@ -51,8 +51,8 @@ namespace AIS
         }
         
      private:
-        std::array<unsigned char, MAX_PAYLOAD_SIZE>       m_data;
-        int32_t                                           m_iBitIndex;
+        alignas(16) std::array<unsigned char, MAX_PAYLOAD_SIZE>       m_data;
+        int32_t                                                       m_iBitIndex;
     };
     
     
