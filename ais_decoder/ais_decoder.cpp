@@ -171,30 +171,31 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
 
 
 /* calc CRC */
-#ifdef __GNUG__
-    #ifndef __clang__
-        __attribute__((optimize("no-tree-vectorize")))
-    #endif
-#endif
 uint8_t AIS::crc(const StringRef &_strPayload)
 {
     const unsigned char* in_ptr = (const unsigned char*)_strPayload.data();
     const unsigned char* in_sentinel  = in_ptr + _strPayload.size();
     const unsigned char* in_sentinel4 = in_ptr + _strPayload.size() - 4;
     
-    uint32_t crc4 = 0;
+    uint8_t checksum = 0;
+    while ((intptr_t(in_ptr) & 3) && in_ptr < in_sentinel) {
+        checksum ^= *in_ptr++;
+    }
+    
+    uint32_t checksum4 = checksum;
     while (in_ptr < in_sentinel4) {
-        crc4 ^= *((uint32_t*)in_ptr);
+        checksum4 ^= *((uint32_t*)in_ptr);
         in_ptr += 4;
     }
     
-    uint8_t crc = (crc4 & 0xff) ^ ((crc4 >> 8) & 0xff) ^ ((crc4 >> 16) & 0xff) ^ ((crc4 >> 24) & 0xff);
+    checksum = (checksum4 & 0xff) ^ ((checksum4 >> 8) & 0xff) ^ ((checksum4 >> 16) & 0xff) ^ ((checksum4 >> 24) & 0xff);
     
     while (in_ptr < in_sentinel) {
-        crc ^= *in_ptr++;
+        checksum ^= *in_ptr++;
     }
     
-    return crc;
+    return checksum;
+
 }
 
 
