@@ -1,4 +1,4 @@
-## Simple AIS NMEA Message Decoder
+## Simple AIS NMEA Message Decoder (v2.0)
 
 This project was created to learn more about AIS and see how easy it would be to create a decoder for the NMEA strings. The NMEA string decoding is implemented according to: 'http://catb.org/gpsd/AIVDM.html'.  The key component to implement was the 6bit nibble packing and unpacking of arbitrarily sized signed and unsigned integers as well as strings (see PayloadBuffer in ais_decoder.h).
 
