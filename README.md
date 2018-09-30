@@ -21,9 +21,9 @@ Some time was also spent on improving the speed of the NMEA string processing to
 - [x] Build-up message stats (bytes processed, messages processed, etc.)
 - [x] Profile and improve speed 
 - [x] Validate fragment count and fragment number values
+- [x] Investigate faster ascii de-armouring and bit packing techniques (thanks to Frans van den Bergh)
 
 - [ ] Validate talker IDs
-- [ ] Investigate faster ascii de-armouring and bit packing techniques
 - [ ] Look at multiple threads/decoders working on the same file, for very large files
 - [ ] Support NMEA files/data with non-standard meta data, timestamp data, etc.
 - [ ] Add minimal networking to work with RTL-AIS and also to forward raw data
