@@ -6,7 +6,7 @@ The decoder consists of a base class that does the decoding, with pure virtual m
 
 The current 'onTypeXX(...)' message callback are unique for each message type (types 1,2,3,4,5,18,19 & 24 currently supported).  No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
 
-Some time was also spent on improving the speed of the NMEA string processing to see how quickly NMEA logs could be processed.  Currently the multi-threaded file reading examples (running a thread per file) achieve more than 500k NMEA messages per second, per thread.  When running on multiple logs concurrently (8 threads is a good number on modern hardware) 4M+ NMEA messages per second is possible.  During testing it was also found that most of the time was spent on the 6bit nibble packing and unpacking, not the file IO.
+Some time was also spent on improving the speed of the NMEA string processing to see how quickly NMEA logs could be processed.  Currently the multi-threaded file reading examples (running a thread per file) achieve more than 3M NMEA messages per second, per thread.  When running on multiple logs concurrently (8 threads is a good number on modern hardware) 12M+ NMEA messages per second is possible.  During testing it was also found that most of the time was spent on the 6bit nibble packing and unpacking, not the file IO.
 
 
 ## Checklist
