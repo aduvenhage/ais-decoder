@@ -38,7 +38,6 @@ This project uses CMAKE to build.  To build through command line on linux, do th
 - make
 - sudo make install
 
-** Currently the 'develop' branch is the branch to use -- the 'master' branch is empty/outdated.
 
 ## Examples
 The project includes some examples of how to use the AIS decoder lib.
