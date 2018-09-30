@@ -86,9 +86,17 @@ void runAndWait()
     
     // NOTE: std::async is used to run test in its own thread
     // NOTE: puts the std::future values (result of async) in a list to wait on later
-    vecThreads.push_back(std::async(std::launch::async, testAis, "nmea_data_sample.txt", 0));
-    vecThreads.push_back(std::async(std::launch::async, testAis, "nmea-sample.txt", 1));
-
+    //vecThreads.push_back(std::async(std::launch::async, testAis, "nmea_data_sample.txt", 0));
+    //vecThreads.push_back(std::async(std::launch::async, testAis, "nmea-sample.txt", 1));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170210.log", 0));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170211.log", 1));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170212.log", 2));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170213.log", 3));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170214.log", 4));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170215.log", 5));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170216.log", 6));
+    vecThreads.push_back(std::async(std::launch::async, testAis, "20170217.log", 7));
+    
     // wait on all threads to stop
     while (vecThreads.empty() == false)
     {

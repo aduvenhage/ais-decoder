@@ -43,7 +43,7 @@ namespace AIS
             return getUnsignedValue(1) != 0;
         }
 
-        /// unback string (6 bit characters)
+        /// unback string (6 bit characters) -- already cleans string (removes trailing '@' and trailing spaces)
         std::string getString(int _iNumBits);
         
         unsigned char* getData(void) {
@@ -60,7 +60,7 @@ namespace AIS
     int decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _iFillBits);
     
     /// calc CRC
-    uint8_t crc(const StringRef &_strPayload);
+    uint8_t crc(const StringRef &_strLine);
 
     
     /**

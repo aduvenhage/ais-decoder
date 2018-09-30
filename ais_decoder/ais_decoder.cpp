@@ -4,8 +4,8 @@
 
 
 
-
 using namespace AIS;
+
 
 PayloadBuffer::PayloadBuffer()
     :m_data{},
@@ -33,11 +33,10 @@ unsigned int PayloadBuffer::getUnsignedValue(int _iBits)
         bits |= (unsigned int)lptr[4] << 8;
         bits |= (unsigned int)lptr[5];
     }
+    
     bits <<= 16 + (m_iBitIndex & 7);
-
     m_iBitIndex += _iBits;
 
-    // we're done, return data
     return (uint64_t)(bits >> (64 - _iBits));
 }
 
@@ -51,34 +50,46 @@ int PayloadBuffer::getSignedValue(int _iBits)
     bits |= (uint64_t)lptr[1] << 32;
     
     if (_iBits > 9) {
-        bits = (uint64_t)lptr[0] << 40;
-        bits |= (uint64_t)lptr[1] << 32;
         bits |= (unsigned int)lptr[2] << 24;
         bits |= (unsigned int)lptr[3] << 16;
         bits |= (unsigned int)lptr[4] << 8;
         bits |= (unsigned int)lptr[5];
     }
+    
     bits <<= 16 + (m_iBitIndex & 7);
-
     m_iBitIndex += _iBits;
 
-    return (int64_t(bits) >> (64 - _iBits));
+    return int64_t(bits) >> (64 - _iBits);
 }
 
-/* unback string (6 bit characters) */
+/* unback string (6 bit characters) -- already cleans string (removes trailing '@' and trailing spaces) */
 std::string PayloadBuffer::getString(int _iNumBits)
 {
-    std::string ret(_iNumBits/6, ' ');
+    std::string ret;
     int iNumChars = _iNumBits/6;
+    ret.reserve(iNumChars);
+    
     int32_t iStartBitIndex = m_iBitIndex;
     
     for (int i = 0; i < iNumChars; i++)
     {
         int ch = getUnsignedValue(6);
-        ret[i] = ASCII_CHARS[ch & 0x3F];
+        
+        if (ch > 0) // stop on '@'
+        {
+            ret.push_back(ASCII_CHARS[ch & 0x3F]);
+        }
+        else
+        {
+            break;
+        }
     }
     
-    m_iBitIndex = iStartBitIndex + _iNumBits;
+    // remove trailing spaces
+    stripTrailingWhitespace(ret);
+    
+    // make sure bit index is correct
+    m_iBitIndex = iStartBitIndex - _iNumBits;
     
     return ret;
 }
@@ -171,10 +182,10 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
 
 
 /* calc CRC */
-uint8_t AIS::crc(const StringRef &_strPayload)
+uint8_t AIS::crc(const StringRef &_strLine)
 {
-    const unsigned char* in_ptr = (const unsigned char*)_strPayload.data();
-    const unsigned char* in_sentinel  = in_ptr + _strPayload.size();
+    const unsigned char* in_ptr = (const unsigned char*)_strLine.data();
+    const unsigned char* in_sentinel  = in_ptr + _strLine.size();
     const unsigned char* in_sentinel4 = in_sentinel - 4;
     
     uint8_t checksum = 0;

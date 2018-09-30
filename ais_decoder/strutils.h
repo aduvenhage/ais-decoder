@@ -185,7 +185,7 @@ namespace AIS
     /// Converts string to an integer. Returns 0 if conversion failed.
     inline int strtoi(const StringRef &_str)
     {
-        // \todo: this is a bit of a hack, since strtol might scan past end of _str (not zero terminated)
+        // \note: this is a bit of a hack (might scan past end of _str, since not zero terminated, but will be terminated by a comma or end-of-line)
         return (int)std::strtol(_str.data(), nullptr, 10);
     }
     
