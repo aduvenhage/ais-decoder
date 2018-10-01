@@ -108,12 +108,10 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
     };
     
-    
     const unsigned char* in_ptr = (unsigned char*)_strPayload.data();
     const unsigned char* in_sentinel = in_ptr + _strPayload.size();
     const unsigned char* in_sentinel4 = in_sentinel - 4;
     unsigned char* out_ptr = _buffer.getData();
-    
     
     uint64_t accumulator = 0;
     unsigned int acc_bitcount = 0;

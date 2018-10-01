@@ -205,13 +205,15 @@ namespace AIS
         size_t chCount = 0;
         const size_t n = _uInputSize - _uOffset;
         const char *pData = _pInput + _uOffset;
-        
+
+        // find NL
         const char* sentinel = pData + n;
         const char* next = (const char*)memchr(pData, '\n', n);
         
         if (next == NULL || next >= sentinel) {
             return 0;
         } else {
+            // check for CR
             chCount = next - pData - (*(next-1) == '\r' ? 1 : 0);
             _strOutput = StringRef(pData, chCount);
             return (next - pData) + 1;
@@ -221,8 +223,7 @@ namespace AIS
     }
     
  	/**
-         Separate input string into words using commas.
-         Removes spaces from start and end of words.
+         Separate input string into words using commas
      */
     inline size_t seperate(std::vector<StringRef> &_output, const StringRef &_strInput)
 	{
@@ -238,19 +239,8 @@ namespace AIS
                 // no comma found, assume we are in the last word
                 next = pChEnd + 1;
             }
-            // word is bounded by pCh and next
-            while (*pCh == ' ') { // strip off leading spaces
-                pCh++;
-            }
-            const char* wend = next - 1;
-            if (*wend == '\r') { // strip off CR if present
-                wend--;
-            }
-            while (wend >= pCh && *wend == ' ') { // strip off trailing spaces
-                wend--;
-            }
             
-            _output[uWordCount].assign(pCh, wend - pCh + 1);
+            _output[uWordCount].assign(pCh, next - pCh);
             uWordCount++;
 
             pCh = next + 1; // continue after comma
