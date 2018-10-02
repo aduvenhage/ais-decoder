@@ -16,7 +16,7 @@ namespace AIS
     /**
      Lightweight buffer for processing file chunks.
      Internal buffer is allowed to grow, but not shrink.
-     This avoids allocation and resize init overheads, if the buffer is resued for multiple chunks.
+     This avoids allocation and resize init overheads, if the buffer is reused for multiple chunks.
      */
     struct FileBuffer
     {

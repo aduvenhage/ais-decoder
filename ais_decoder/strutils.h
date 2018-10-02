@@ -9,33 +9,29 @@
 #include <string>
 #include <algorithm>
 #include <vector>
-#include <regex>
-#include <array>
 #include <memory>
-#include <sstream>
 
 
 
-// define own version of va_copy on MSVC platforms (only VS2013+ seems to have moved to the new VA standard)
-#if defined(_MSC_VER) && (_MSC_VER < 1800) || defined(__BCPLUSPLUS__)
-#ifndef va_copy
-#define va_copy(dst, src) ((void)((dst) = (src)))
-#endif
-#endif
-
-// define snprintf on MSVC platforms
-#if defined(_MSC_VER)
-#ifndef snprintf
-#define snprintf _snprintf
-#endif
-#endif
-
-// define own version of vsnprintf on MSVC platforms
-#if defined(_MSC_VER)
-#define vsnprintf_(s, n, format, arg) vsnprintf_s(s, (n)+1, (n), format, arg)
-#else
-#define vsnprintf_(s, n, format, arg) vsnprintf(s, (n), format, arg)
-#endif
+namespace
+{
+    // from 'https://github.com/freebsd/freebsd/blob/master/lib/libc/string/memrchr.c'
+    inline void *memrchr(const void *s, int c, size_t n)
+    {
+        const unsigned char *cp;
+        
+        if (n != 0) {
+            cp = (unsigned char *)s + n;
+            do {
+                if (*(--cp) == (unsigned char)c) {
+                    return((void *)cp);
+                }
+            } while (--n != 0);
+        }
+        
+        return nullptr;
+    }
+};
 
 
 
@@ -77,17 +73,10 @@ namespace AIS
     /** strip trailing chars after and including '_chStrip' */
     inline std::string &stripTrailingAll(std::string &_str, char _chStrip)
     {
-        const char *pCh = _str.data();
-        const size_t n = _str.size();
-        
-        for (size_t i = 0; i < n; i++)
+        const char *pNext = (const char*)memchr(_str.data(), _chStrip, _str.size());
+        if (pNext != nullptr)
         {
-            const char ch = *pCh++;
-            if (ch == _chStrip)
-            {
-                _str.resize(i);
-                break;
-            }
+            _str.resize(pNext - _str.data());
         }
         
         return _str;
@@ -96,7 +85,7 @@ namespace AIS
     /** strip trailing chars after and including '_chStrip' */
     inline std::string stripTrailingAll(const std::string &_str, char _chStrip)
     {
-        std::string ret;
+        std::string ret(_str);
         stripTrailingAll((std::string&)ret, _chStrip);
         return ret;
     }
@@ -152,7 +141,7 @@ namespace AIS
         const char *begin() const {return m_psRef;}
         const char *end() const {return m_psRef + m_uSize;}
         
-        StringRef &assign(const char *_psRef, size_t _uSize) {m_psRef = _psRef; m_uSize = _uSize; return *this;}
+        void assign(const char *_psRef, size_t _uSize) {m_psRef = _psRef; m_uSize = _uSize;}
         
         operator std::string () const {return std::string(m_psRef, m_psRef + m_uSize);}
 
@@ -166,16 +155,10 @@ namespace AIS
     {
         if (_str.size() > 0)
         {
-            const char *pCh = _str.data() + _str.size();
-            while (pCh > _str.data())
+            const char *pNext = (const char *)memrchr(_str.data(), _ch, _str.size());
+            if (pNext != nullptr)
             {
-                const char ch = *pCh;
-                if (ch == _ch)
-                {
-                    return pCh - _str.data();
-                }
-                
-                pCh--;
+                return pNext - _str.data();
             }
         }
         
@@ -210,7 +193,7 @@ namespace AIS
         const char* sentinel = pData + n;
         const char* next = (const char*)memchr(pData, '\n', n);
         
-        if (next == NULL || next >= sentinel) {
+        if (next == nullptr || next >= sentinel) {
             return 0;
         } else {
             // check for CR
@@ -235,7 +218,7 @@ namespace AIS
                 (uWordCount < _output.size()) ) {
                 
             const char* next =  (const char*)memchr(pCh, ',', pChEnd - pCh);
-            if (next == NULL || next > pChEnd) {
+            if (next == nullptr || next > pChEnd) {
                 // no comma found, assume we are in the last word
                 next = pChEnd + 1;
             }

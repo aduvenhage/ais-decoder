@@ -643,7 +643,7 @@ std::string AIS::getCleanName(const std::string &_str)
 {
     std::string ret(_str);
     
-    if (_str.empty() == false)
+    if (ret.empty() == false)
     {
         // strip all chars after (and including) '@'
         stripTrailingAll(ret, '@');
