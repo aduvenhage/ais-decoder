@@ -19,8 +19,8 @@ class AisDummyDecoder : public AIS::AisDecoder
  protected:
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
     
-    virtual void onType4(unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
-                         bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {}
+    virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
+                           bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {}
     
     virtual void onType5(unsigned int _uMmsi, unsigned int _uImo, const std::string &_strCallsign, const std::string &_strName,
                          unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard, unsigned int _uFixType,
@@ -36,6 +36,8 @@ class AisDummyDecoder : public AIS::AisDecoder
     virtual void onType24A(unsigned int _uMmsi, const std::string &_strName) override {}
     
     virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
+    
+    virtual void onSentence(const AIS::StringRef &_strSentence) override {}
     
     virtual void onMessage(const AIS::StringRef &_strMessage) override {}
     

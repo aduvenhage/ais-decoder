@@ -20,8 +20,9 @@ namespace AIS
      */
     struct FileBuffer
     {
-        FileBuffer()
-            :m_uSize(0)
+        FileBuffer(size_t _uReservedSize)
+            :m_data(_uReservedSize, 0),
+             m_uSize(0)
         {}
         
         const char *data() const {return m_data.data();}
@@ -66,7 +67,7 @@ namespace AIS
     template <typename progress_func_t>
     void processAisFile(const std::string &_strLogPath, AIS::AisDecoder &_decoder, size_t _uBlockSize, progress_func_t &_progressCb)
     {
-        FileBuffer buffer;
+        FileBuffer buffer(_uBlockSize + 512);
         
         // open file
         FILE *pFileIn = fopen(_strLogPath.c_str(), "rb");

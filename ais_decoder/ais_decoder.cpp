@@ -249,8 +249,24 @@ AisDecoder::AisDecoder(int _iIndex)
      m_uTotalMessages(0),
      m_uTotalBytes(0),
      m_uCrcErrors(0),
-     m_uDecodingErrors(0)
-{}
+     m_uDecodingErrors(0),
+     m_vecMsgCallbacks{}
+{
+    // attach callbacks to relevant message types
+    // NOTE: some callbacks attach to multiple message types
+    m_vecMsgCallbacks[1] = &AisDecoder::decodeType123;
+    m_vecMsgCallbacks[2] = &AisDecoder::decodeType123;
+    m_vecMsgCallbacks[3] = &AisDecoder::decodeType123;
+    m_vecMsgCallbacks[4] = &AisDecoder::decodeType411;
+    m_vecMsgCallbacks[5] = &AisDecoder::decodeType5;
+    m_vecMsgCallbacks[9] = &AisDecoder::decodeType9;
+    m_vecMsgCallbacks[11] = &AisDecoder::decodeType411;
+    m_vecMsgCallbacks[18] = &AisDecoder::decodeType18;
+    m_vecMsgCallbacks[19] = &AisDecoder::decodeType19;
+    m_vecMsgCallbacks[21] = &AisDecoder::decodeType21;
+    m_vecMsgCallbacks[24] = &AisDecoder::decodeType24;
+    //m_vecMsgCallbacks[27] = &AisDecoder::decodeType27;
+}
 
 /* decode Position Report (class A) */
 void AisDecoder::decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
@@ -276,7 +292,7 @@ void AisDecoder::decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, i
 }
 
 /* decode Base Station Report (type nibble already pulled from buffer) */
-void AisDecoder::decodeType4(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
+void AisDecoder::decodeType411(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
     if (_iPayloadSizeBits < 168)
     {
@@ -296,7 +312,7 @@ void AisDecoder::decodeType4(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
     
-    onType4(mmsi, year, month, day, hour, minute, second, posAccuracy, posLon, posLat);
+    onType411(_uMsgType, mmsi, year, month, day, hour, minute, second, posAccuracy, posLon, posLat);
 }
 
 /* decode Voyage Report (type nibble already pulled from buffer) */
@@ -328,6 +344,34 @@ void AisDecoder::decodeType5(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     auto destination = _buffer.getString(120);
     
     onType5(mmsi, imo, callsign, name, type, toBow, toStern, toPort, toStarboard, fixType, etaMonth, etaDay, etaHour, etaMinute, draught, destination);
+}
+
+/* decode Standard SAR Aircraft Position Report */
+void AisDecoder::decodeType9(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
+{
+    if (_iPayloadSizeBits < 168)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
+    // decode message fields (binary buffer has to go through all fields, but some fields are not used)
+    _buffer.getUnsignedValue(2);                 // repeatIndicator
+    auto mmsi = _buffer.getUnsignedValue(30);
+    auto altitude = _buffer.getUnsignedValue(12);
+    auto sog = _buffer.getUnsignedValue(10);
+    auto posAccuracy = _buffer.getBoolValue();
+    auto posLon = _buffer.getSignedValue(28);
+    auto posLat = _buffer.getSignedValue(27);
+    auto cog = _buffer.getSignedValue(12);
+    auto timestamp = _buffer.getUnsignedValue(6);
+    _buffer.getUnsignedValue(8);                    // reserved
+    auto dte = _buffer.getBoolValue();
+    _buffer.getUnsignedValue(3);                    // spare
+    auto assigned = _buffer.getBoolValue();
+    auto raim = _buffer.getBoolValue();
+    auto radioStatus = _buffer.getUnsignedValue(6);
+    
+    
 }
 
 /* decode Position Report (class B; type nibble already pulled from buffer) */
@@ -383,6 +427,42 @@ void AisDecoder::decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     onType19(mmsi, sog, posAccuracy, posLon, posLat, cog, heading, name, type, toBow, toStern, toPort, toStarboard);
 }
 
+/* decode Aid-to-Navigation Report */
+void AisDecoder::decodeType21(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
+{
+    if (_iPayloadSizeBits < 272)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
+    // decode message fields (binary buffer has to go through all fields, but some fields are not used)
+    _buffer.getUnsignedValue(2);                 // repeatIndicator
+    auto mmsi = _buffer.getUnsignedValue(30);
+    auto aidType = _buffer.getUnsignedValue(5);
+    auto name = _buffer.getString(120);
+    auto posAccuracy = _buffer.getBoolValue();
+    auto posLon = _buffer.getSignedValue(28);
+    auto posLat = _buffer.getSignedValue(27);
+    auto toBow = _buffer.getUnsignedValue(9);
+    auto toStern = _buffer.getUnsignedValue(9);
+    auto toPort = _buffer.getUnsignedValue(6);
+    auto toStarboard = _buffer.getUnsignedValue(6);
+    auto epfdType = _buffer.getUnsignedValue(4);
+    auto timestamp = _buffer.getUnsignedValue(6);
+    auto offPosition = _buffer.getBoolValue();
+    _buffer.getUnsignedValue(8);                    // reserved
+    auto raim = _buffer.getBoolValue();
+    auto virtualAid = _buffer.getBoolValue();
+    auto assignedMode = _buffer.getBoolValue();
+    _buffer.getUnsignedValue(1);                    // spare
+    
+    std::string nameExt;
+    if (_iPayloadSizeBits > 272)
+    {
+        nameExt = _buffer.getString(88);
+    }
+}
+
 /* decode Voyage Report and Static Data (type nibble already pulled from buffer) */
 void AisDecoder::decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
 {
@@ -436,54 +516,29 @@ void AisDecoder::decodeMobileAisMsg(const StringRef &_strPayload, int _iFillBits
     m_binaryBuffer.resetBitIndex();
     int iBitsUsed = decodeAscii(m_binaryBuffer, _strPayload, _iFillBits);
     m_binaryBuffer.resetBitIndex();
-    
-    // decode message
+
+    // check message type
     auto msgType = m_binaryBuffer.getUnsignedValue(6);
-    m_msgCounts[msgType]++;
-    m_uTotalMessages++;
-    
-    // position report (class A)
-    if ( (msgType == 1) ||
-         (msgType == 2) ||
-         (msgType == 3) )
+    if ( (msgType == 0) ||
+         (msgType > 27) )
     {
-        decodeType123(m_binaryBuffer, msgType, iBitsUsed);
+        onDecodeError(_strPayload, "Invalid message type (" + std::to_string(msgType) + ").");
     }
-    
-    // base station report
-    else if (msgType == 4)
-    {
-        decodeType4(m_binaryBuffer, msgType, iBitsUsed);
-    }
-    
-    // voyage report
-    else if (msgType == 5)
-    {
-        decodeType5(m_binaryBuffer, msgType, iBitsUsed);
-    }
-    
-    // position report (class B)
-    else if (msgType == 18)
-    {
-        decodeType18(m_binaryBuffer, msgType, iBitsUsed);
-    }
-    
-    // position report (class B)
-    else if (msgType == 19)
-    {
-        decodeType19(m_binaryBuffer, msgType, iBitsUsed);
-    }
-    
-    // static data report (class B)
-    else if (msgType == 24)
-    {
-        decodeType24(m_binaryBuffer, msgType, iBitsUsed);
-    }
-    
-    // message not decoded
     else
     {
-        onNotDecoded(_strPayload, msgType);
+        // decode message
+        m_msgCounts[msgType]++;
+        m_uTotalMessages++;
+    
+        auto pFnDecoder = m_vecMsgCallbacks[msgType];
+        if (pFnDecoder != nullptr)
+        {
+            (this->*pFnDecoder)(m_binaryBuffer, msgType, iBitsUsed);
+        }
+        else
+        {
+            onNotDecoded(_strPayload, msgType);
+        }
     }
 }
 
@@ -529,6 +584,9 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
     size_t n = getLine(strLine, _pNmeaBuffer, _uBufferSize, _uOffset);
     if (n > 0)
     {
+        // provide raw data back to user
+        onSentence(StringRef(_pNmeaBuffer + _uOffset, n));
+                   
         // check sentence CRC
         if (checkCrc(strLine) == true)
         {

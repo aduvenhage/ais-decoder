@@ -88,8 +88,13 @@ namespace AIS
     
     /**
      AIS decoder base class.
+     Implemented according to 'http://catb.org/gpsd/AIVDM.html'.
      
-     \note implemented according to 'http://catb.org/gpsd/AIVDM.html'.
+     A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods as well as error handling methods.
+     Some user onTypeXX(...) methods are attached to multiple message types, for example: 123 (types 1, 2 & 3) and 411 (types 4 & 11).
+     
+     Basic error checking, including CRC checks, are done and also reported.
+     No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
      
      */
     class AisDecoder
@@ -100,6 +105,8 @@ namespace AIS
         const static int MAX_MSG_PAYLOAD_LENGTH    = 82;       ///< max payload length (NMEA limit)
         const static int MAX_MSG_FRAGMENTS         = 5;        ///< maximum number of fragments/sentences a message can have
         const static int MAX_MSG_WORDS             = 10;       ///< maximum number of words per sentence
+        
+        using pfnMsgCallback = void (AisDecoder::*)(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
 
      public:
         AisDecoder(int _iIndex = 0);
@@ -125,10 +132,11 @@ namespace AIS
         /// returns the total number of decoding errors
         uint64_t getDecodingErrorCount() const {return m_uDecodingErrors;}
         
+        // user defined callbacks
      protected:
         virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
-        virtual void onType4(unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
-                             bool _bPosAccuracy, int _iPosLon, int _iPosLat) = 0;
+        virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
+                               bool _bPosAccuracy, int _iPosLon, int _iPosLat) = 0;
         virtual void onType5(unsigned int _uMmsi, unsigned int _uImo, const std::string &_strCallsign, const std::string &_strName,
                              unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard, unsigned int _uFixType,
                              unsigned int _uEtaMonth, unsigned int _uEtaDay, unsigned int _uEtaHour, unsigned int _uEtaMinute, unsigned int _uDraught,
@@ -144,7 +152,10 @@ namespace AIS
         
         virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) = 0;
         
-        /// called on every full message, before onTypeXX specific message
+        /// called on every sentence received (includes all characters, including NL, CR, etc.; called before any validation or CRCs checks are performed)
+        virtual void onSentence(const StringRef &_strSentence) = 0;
+        
+        /// called on every full message (i.e. all fragments), before onTypeXX specific message
         virtual void onMessage(const StringRef &_strPayload) = 0;
         
         /// called when message type is not supported (i.e. onTypeXX not implemented), and onMessage(...) is still called
@@ -163,17 +174,26 @@ namespace AIS
         /// decode Position Report (class A; type nibble already pulled from buffer)
         void decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
-        /// decode Base Station Report (type nibble already pulled from buffer)
-        void decodeType4(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
+        /// decode Base Station Report (type nibble already pulled from buffer; or, response to inquiry)
+        void decodeType411(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Voyage Report and Static Data (type nibble already pulled from buffer)
         void decodeType5(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
+        
+        /// decode Standard SAR Aircraft Position Report
+        void decodeType9(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
+        
+        /// decode Standard SAR Aircraft Position Report
+        void decodeType11(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Position Report (class B; type nibble already pulled from buffer)
         void decodeType18(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Position Report (class B; type nibble already pulled from buffer)
         void decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
+        
+        /// decode Aid-to-Navigation Report
+        void decodeType21(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
         /// decode Voyage Report and Static Data (type nibble already pulled from buffer)
         void decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
@@ -189,6 +209,8 @@ namespace AIS
         uint64_t                                                                m_uTotalBytes;
         uint64_t                                                                m_uCrcErrors;           ///< CRC check error count
         uint64_t                                                                m_uDecodingErrors;      ///< decoding error count (includes CRC errors)
+        
+        std::array<pfnMsgCallback, 100>                                         m_vecMsgCallbacks;
     };
     
     
