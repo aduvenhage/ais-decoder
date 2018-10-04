@@ -198,6 +198,9 @@ namespace AIS
         /// decode Voyage Report and Static Data (type nibble already pulled from buffer)
         void decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
         
+        /// decode Long Range AIS Broadcast message (type nibble already pulled from buffer)
+        void decodeType27(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits);
+
     private:
         int                                                                     m_iIndex;               ///< arbitrary id/index set by user for this decoder
         PayloadBuffer                                                           m_binaryBuffer;

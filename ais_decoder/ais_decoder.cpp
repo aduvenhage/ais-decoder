@@ -89,7 +89,7 @@ std::string PayloadBuffer::getString(int _iNumBits)
     stripTrailingWhitespace(ret);
     
     // make sure bit index is correct
-    m_iBitIndex = iStartBitIndex - _iNumBits;
+    m_iBitIndex = iStartBitIndex + _iNumBits;
     
     return ret;
 }
@@ -265,7 +265,7 @@ AisDecoder::AisDecoder(int _iIndex)
     m_vecMsgCallbacks[19] = &AisDecoder::decodeType19;
     m_vecMsgCallbacks[21] = &AisDecoder::decodeType21;
     m_vecMsgCallbacks[24] = &AisDecoder::decodeType24;
-    //m_vecMsgCallbacks[27] = &AisDecoder::decodeType27;
+    m_vecMsgCallbacks[27] = &AisDecoder::decodeType27;
 }
 
 /* decode Position Report (class A) */
@@ -288,6 +288,12 @@ void AisDecoder::decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, i
     auto cog = _buffer.getSignedValue(12);
     auto heading = _buffer.getUnsignedValue(9);
     
+    _buffer.getUnsignedValue(6);     // timestamp
+    _buffer.getUnsignedValue(2);     // maneuver indicator
+    _buffer.getUnsignedValue(3);     // spare
+    _buffer.getBoolValue();          // RAIM
+    _buffer.getUnsignedValue(19);     // radio status
+
     onType123(_uMsgType, mmsi, navstatus, rot, sog, posAccuracy, posLon, posLat, cog, heading);
 }
 
@@ -311,6 +317,11 @@ void AisDecoder::decodeType411(PayloadBuffer &_buffer, unsigned int _uMsgType, i
     auto posAccuracy = _buffer.getBoolValue();
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
+    
+    _buffer.getUnsignedValue(4);     // epfd type
+    _buffer.getUnsignedValue(10);    // spare
+    _buffer.getBoolValue();          // RAIM
+    _buffer.getUnsignedValue(19);    // radio status
     
     onType411(_uMsgType, mmsi, year, month, day, hour, minute, second, posAccuracy, posLon, posLat);
 }
@@ -340,9 +351,12 @@ void AisDecoder::decodeType5(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     auto etaDay = _buffer.getUnsignedValue(5);      // day (1-31), 0 = N/A
     auto etaHour = _buffer.getUnsignedValue(5);     // hour (0 - 23), 24 = N/A
     auto etaMinute = _buffer.getUnsignedValue(6);   // minute (0-59), 60 = N/A
-    auto draught = _buffer.getUnsignedValue(8);                        // draught
+    auto draught = _buffer.getUnsignedValue(8);
     auto destination = _buffer.getString(120);
     
+    _buffer.getBoolValue();                         // dte
+    _buffer.getUnsignedValue(1);                    // spare
+
     onType5(mmsi, imo, callsign, name, type, toBow, toStern, toPort, toStarboard, fixType, etaMonth, etaDay, etaHour, etaMinute, draught, destination);
 }
 
@@ -363,15 +377,16 @@ void AisDecoder::decodeType9(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
     auto cog = _buffer.getSignedValue(12);
-    auto timestamp = _buffer.getUnsignedValue(6);
-    _buffer.getUnsignedValue(8);                    // reserved
-    auto dte = _buffer.getBoolValue();
-    _buffer.getUnsignedValue(3);                    // spare
-    auto assigned = _buffer.getBoolValue();
-    auto raim = _buffer.getBoolValue();
-    auto radioStatus = _buffer.getUnsignedValue(6);
     
-    
+    _buffer.getUnsignedValue(6);     // timestamp
+    _buffer.getUnsignedValue(8);     // reserved
+    _buffer.getBoolValue();          // dte
+    _buffer.getUnsignedValue(3);     // spare
+    _buffer.getBoolValue();          // assigned
+    _buffer.getBoolValue();          // RAIM
+    _buffer.getUnsignedValue(20);    // radio status
+
+    //onType9(_uMsgType, mmsi, sog, posAccuracy, posLon, posLat, cog, altitude);
 }
 
 /* decode Position Report (class B; type nibble already pulled from buffer) */
@@ -392,6 +407,17 @@ void AisDecoder::decodeType18(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     auto posLat = _buffer.getSignedValue(27);
     auto cog = _buffer.getSignedValue(12);
     auto heading = _buffer.getSignedValue(9);
+    
+    _buffer.getUnsignedValue(6);     // timestamp
+    _buffer.getUnsignedValue(2);     // reserved
+    _buffer.getBoolValue();          // cs unit
+    _buffer.getBoolValue();          // display
+    _buffer.getBoolValue();          // dsc
+    _buffer.getBoolValue();          // band
+    _buffer.getBoolValue();          // msg22
+    _buffer.getBoolValue();          // assigned
+    _buffer.getBoolValue();          // RAIM
+    _buffer.getUnsignedValue(20);     // radio status
     
     onType18(mmsi, sog, posAccuracy, posLon, posLat, cog, heading);
 }
@@ -422,8 +448,13 @@ void AisDecoder::decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     auto toStern = _buffer.getUnsignedValue(9);
     auto toPort = _buffer.getUnsignedValue(6);
     auto toStarboard = _buffer.getUnsignedValue(6);
-    _buffer.getUnsignedValue(4);                 // fix type
     
+    _buffer.getUnsignedValue(4);     // fix type
+    _buffer.getBoolValue();          // RAIM
+    _buffer.getBoolValue();          // dte
+    _buffer.getBoolValue();          // assigned
+    _buffer.getUnsignedValue(4);     // spare
+
     onType19(mmsi, sog, posAccuracy, posLon, posLat, cog, heading, name, type, toBow, toStern, toPort, toStarboard);
 }
 
@@ -447,20 +478,25 @@ void AisDecoder::decodeType21(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     auto toStern = _buffer.getUnsignedValue(9);
     auto toPort = _buffer.getUnsignedValue(6);
     auto toStarboard = _buffer.getUnsignedValue(6);
-    auto epfdType = _buffer.getUnsignedValue(4);
-    auto timestamp = _buffer.getUnsignedValue(6);
+    
+    _buffer.getUnsignedValue(4);        // epfd type
+    _buffer.getUnsignedValue(6);        // timestamp
+    
     auto offPosition = _buffer.getBoolValue();
-    _buffer.getUnsignedValue(8);                    // reserved
-    auto raim = _buffer.getBoolValue();
-    auto virtualAid = _buffer.getBoolValue();
-    auto assignedMode = _buffer.getBoolValue();
-    _buffer.getUnsignedValue(1);                    // spare
+    
+    _buffer.getUnsignedValue(8);        // reserved
+    _buffer.getBoolValue();             // RAIM
+    _buffer.getBoolValue();             // virtual aid
+    _buffer.getBoolValue();             // assigned mode
+    _buffer.getUnsignedValue(1);        // spare
     
     std::string nameExt;
     if (_iPayloadSizeBits > 272)
     {
         nameExt = _buffer.getString(88);
     }
+    
+    //onType21(_uMsgType, mmsi, aidType, name + nameExt, posAccuracy, posLon, posLat, toBow, toStern, toPort, toStarboard);
 }
 
 /* decode Voyage Report and Static Data (type nibble already pulled from buffer) */
@@ -502,11 +538,47 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, in
         auto toStern = _buffer.getUnsignedValue(9);
         auto toPort = _buffer.getUnsignedValue(6);
         auto toStarboard = _buffer.getUnsignedValue(6);
-        // FvdB: Note that this field overlaps the previous 4 fields, total message length is 162 bits
+        
+        // FvdB: Note that 'Mothership MMSI' field overlaps the previous 4 fields, total message length is 168 bits
         // _buffer.getUnsignedValue(30);                // Mothership MMSI
+        
+        _buffer.getUnsignedValue(6);        // spare
         
         onType24B(mmsi, callsign, type, toBow, toStern, toPort, toStarboard);
     }
+    
+    // invalid part
+    else
+    {
+        throw std::runtime_error("Invalid part number (" + std::to_string(partNo) + ") for messag type " + std::to_string(_uMsgType));
+    }
+}
+
+/* decode Long Range AIS Broadcast message (type nibble already pulled from buffer) */
+void AisDecoder::decodeType27(PayloadBuffer &_buffer, unsigned int _uMsgType, int _iPayloadSizeBits)
+{
+    if (_iPayloadSizeBits < 96)
+    {
+        throw std::runtime_error("Invalid payload size (" + std::to_string(_iPayloadSizeBits) + " bits) for messag type " + std::to_string(_uMsgType));
+    }
+    
+    // decode message fields (binary buffer has to go through all fields, but some fields are not used)
+    _buffer.getUnsignedValue(2);                 // repeatIndicator
+    auto mmsi = _buffer.getUnsignedValue(30);
+    auto posAccuracy = _buffer.getBoolValue();
+    
+    _buffer.getBoolValue();         // RAIM
+    
+    auto navstatus = _buffer.getUnsignedValue(4);
+    auto posLon = _buffer.getSignedValue(18);
+    auto posLat = _buffer.getSignedValue(17);
+    auto sog = _buffer.getUnsignedValue(6);
+    auto cog = _buffer.getSignedValue(9);
+    
+    _buffer.getUnsignedValue(1);        // GNSS
+    _buffer.getUnsignedValue(1);        // spare
+
+    //onType27(_uMsgType, mmsi, navstatus, sog, posAccuracy, posLon, posLat, cog);
 }
 
 /* decode Mobile AIS station message */
