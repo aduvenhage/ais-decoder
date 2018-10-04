@@ -386,7 +386,7 @@ void AisDecoder::decodeType9(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     _buffer.getBoolValue();          // RAIM
     _buffer.getUnsignedValue(20);    // radio status
 
-    //onType9(_uMsgType, mmsi, sog, posAccuracy, posLon, posLat, cog, altitude);
+    onType9(mmsi, sog, posAccuracy, posLon, posLat, cog, altitude);
 }
 
 /* decode Position Report (class B; type nibble already pulled from buffer) */
@@ -481,9 +481,7 @@ void AisDecoder::decodeType21(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     
     _buffer.getUnsignedValue(4);        // epfd type
     _buffer.getUnsignedValue(6);        // timestamp
-    
-    auto offPosition = _buffer.getBoolValue();
-    
+    _buffer.getBoolValue();             // off position
     _buffer.getUnsignedValue(8);        // reserved
     _buffer.getBoolValue();             // RAIM
     _buffer.getBoolValue();             // virtual aid
@@ -496,7 +494,7 @@ void AisDecoder::decodeType21(PayloadBuffer &_buffer, unsigned int _uMsgType, in
         nameExt = _buffer.getString(88);
     }
     
-    //onType21(_uMsgType, mmsi, aidType, name + nameExt, posAccuracy, posLon, posLat, toBow, toStern, toPort, toStarboard);
+    onType21(mmsi, aidType, name + nameExt, posAccuracy, posLon, posLat, toBow, toStern, toPort, toStarboard);
 }
 
 /* decode Voyage Report and Static Data (type nibble already pulled from buffer) */
@@ -578,7 +576,7 @@ void AisDecoder::decodeType27(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     _buffer.getUnsignedValue(1);        // GNSS
     _buffer.getUnsignedValue(1);        // spare
 
-    //onType27(_uMsgType, mmsi, navstatus, sog, posAccuracy, posLon, posLat, cog);
+    onType27(mmsi, navstatus, sog, posAccuracy, posLon, posLat, cog);
 }
 
 /* decode Mobile AIS station message */

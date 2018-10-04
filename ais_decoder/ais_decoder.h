@@ -91,7 +91,7 @@ namespace AIS
      Implemented according to 'http://catb.org/gpsd/AIVDM.html'.
      
      A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods as well as error handling methods.
-     Some user onTypeXX(...) methods are attached to multiple message types, for example: 123 (types 1, 2 & 3) and 411 (types 4 & 11).
+     Some user onTypeXX(...) methods are attached to multiple message types, for example: 123 (types 1, 2 & 3) and 411 (types 4 & 11), in which case the message type is the first parameter.
      
      Basic error checking, including CRC checks, are done and also reported.
      No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
@@ -142,15 +142,22 @@ namespace AIS
                              unsigned int _uEtaMonth, unsigned int _uEtaDay, unsigned int _uEtaHour, unsigned int _uEtaMinute, unsigned int _uDraught,
                              const std::string &_strDestination) = 0;
         
+        virtual void onType9(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, unsigned int _iAltitude) = 0;
+        
         virtual void onType18(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
         
         virtual void onType19(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading,
                               const std::string &_strName, unsigned int _uType,
                               unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) = 0;
         
+        virtual void onType21(unsigned int _uMmsi, unsigned int _uAidType, const std::string &_strName, bool _bPosAccuracy, int _iPosLon, int _iPosLat,
+                              unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) = 0;
+        
         virtual void onType24A(unsigned int _uMmsi, const std::string &_strName) = 0;
         
         virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) = 0;
+        
+        virtual void onType27(unsigned int _uMmsi, unsigned int _uNavstatus, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog) = 0;
         
         /// called on every sentence received (includes all characters, including NL, CR, etc.; called before any validation or CRCs checks are performed)
         virtual void onSentence(const StringRef &_strSentence) = 0;
