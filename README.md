@@ -49,7 +49,7 @@ cd python
 swig -Wall -c++ -python ais_decoder.i
 c++ -c -fPIC ais_decoder_wrap.cxx -I /System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/
 c++ -shared ais_decoder_wrap.o -lpython -lais_decoder -o _ais_decoder.so
-'''
+```
 
 
 ## Import and use python module (WIP)
