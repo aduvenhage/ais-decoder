@@ -1,5 +1,4 @@
 ## Simple AIS NMEA Message Decoder (v2.0)
-
 This project was created to learn more about AIS and see how easy it would be to create a decoder for the NMEA strings. The NMEA string decoding is implemented according to: 'http://catb.org/gpsd/AIVDM.html'.  The key component to implement was the 6bit nibble packing and unpacking of arbitrarily sized signed and unsigned integers as well as strings (see PayloadBuffer in ais_decoder.h).
 
 The decoder consists of a base class that does the decoding, with pure virtual methods for each AIS messages type.  A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods as well as error handling methods (see the examples, for how this is done).  Basic error checking, including CRC checks, are done and also reported.
@@ -41,3 +40,25 @@ This project uses CMAKE to build.  To build through command line on linux, do th
 
 ## Examples
 The project includes some examples of how to use the AIS decoder lib.
+
+## Create a python module (WIP)
+Use SWIG to compile a python module.  The module is built around the 'ais_quick' interface. See 'examples/quick'.
+
+```
+cd python
+swig -Wall -c++ -python ais_decoder.i
+c++ -c -fPIC ais_decoder_wrap.cxx -I /System/Library/Frameworks/Python.framework/Versions/2.7/include/python2.7/
+c++ -shared ais_decoder_wrap.o -lpython -lais_decoder -o _ais_decoder.so
+'''
+
+
+# Import and use python module (WIP)
+In python do the following to test:
+
+```
+import ais_decoder
+
+ais_decoder.pushSentence("!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n")
+msg = ais_decoder.popMessage().asdict()
+```
+
