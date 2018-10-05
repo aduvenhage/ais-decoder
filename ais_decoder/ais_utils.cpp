@@ -513,6 +513,45 @@ namespace
     }
     
     
+    // nav-aid types for message type 21
+    std::vector<std::string> loadNavAidTypes()
+    {
+        std::vector<std::string> types = {
+                "",
+                "Reference",
+                "RACON",
+                "Fixed Structure",
+                "",
+                "Light",
+                "Light",
+                "Leading Light Front",
+                "Leading Light Rear",
+                "Beacon, Cardinal N",
+                "Beacon, Cardinal E",
+                "Beacon, Cardinal S",
+                "Beacon, Cardinal W",
+                "Beacon, Port hand",
+                "Beacon, Starboard hand",
+                "Beacon, Preferred Channel port hand",
+                "Beacon, Preferred Channel starboard hand",
+                "Beacon, Isolated danger",
+                "Beacon, Safe water",
+                "Beacon, Special mark",
+                "Cardinal Mark N",
+                "Cardinal Mark E",
+                "Cardinal Mark S",
+                "Cardinal Mark W",
+                "Port hand Mark",
+                "Starboard hand Mark",
+                "Preferred Channel Port hand",
+                "Preferred Channel Starboard hand",
+                "Isolated danger",
+                "Safe Water",
+                "Special Mark",
+                "Rig"};
+        
+        return types;
+    };
 };
 
 
@@ -667,6 +706,22 @@ std::string AIS::mmsi_to_string(const std::string &_strMmsi)
 {
     return std::string(std::max(0, 9 - (int)_strMmsi.length()), '0') + _strMmsi;
 }
+
+/* returns nav aid type string */
+const std::string &AIS::getAisNavAidType(int _iNavAidType)
+{
+    static std::vector<std::string> typeList = loadNavAidTypes();
+    if ( (_iNavAidType < 0) ||
+         (_iNavAidType >= (int)typeList.size()) )
+    {
+        return typeList[0];
+    }
+    else
+    {
+        return typeList[(size_t)_iNavAidType];
+    }
+}
+
 
 
 

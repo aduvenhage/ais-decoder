@@ -342,6 +342,10 @@ void AisDecoder::decodeType5(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     auto callsign = _buffer.getString(42);
     auto name = _buffer.getString(120);
     auto type = _buffer.getUnsignedValue(8);
+    if (type > 99) {
+        type = 0;
+    }
+    
     auto toBow = _buffer.getUnsignedValue(9);
     auto toStern = _buffer.getUnsignedValue(9);
     auto toPort = _buffer.getUnsignedValue(6);

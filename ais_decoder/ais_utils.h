@@ -33,6 +33,9 @@ namespace AIS
     /// make sure mmsi has 9 digits
     std::string mmsi_to_string(const std::string &_strMmsi);
     
+    /// returns nav aid type string
+    const std::string &getAisNavAidType(int _iNavAidType);
+    
 };  // namespace AIS
 
 
