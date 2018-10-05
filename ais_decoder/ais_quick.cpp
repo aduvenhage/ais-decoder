@@ -44,12 +44,26 @@ class AisQuickDecoder : public AIS::AisDecoder
     }
     
     virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
-                           bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {}
-    
+                           bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {
+        AisMessage msg;
+        
+        msg.m_fields["type"] = std::to_string(_uMsgType);
+        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+
+        m_messages.push(std::move(msg));
+    }
+
     virtual void onType5(unsigned int _uMmsi, unsigned int _uImo, const std::string &_strCallsign, const std::string &_strName,
                          unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard, unsigned int _uFixType,
                          unsigned int _uEtaMonth, unsigned int _uEtaDay, unsigned int _uEtaHour, unsigned int _uEtaMinute, unsigned int _uDraught,
-                         const std::string &_strDestination) override {}
+                         const std::string &_strDestination) override {
+        AisMessage msg;
+        
+        msg.m_fields["type"] = std::to_string(5);
+        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+
+        m_messages.push(std::move(msg));
+    }
     
     virtual void onType9(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, unsigned int _iAltitude) override {}
     
