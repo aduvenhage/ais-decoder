@@ -4,10 +4,11 @@ from pprint import pprint
 
 info = get_paths()  # a dictionary of key-paths
 pythonHeaders = info['include']
-pythonLib = 'python'
 
 module1 = Extension('_ais_decoder', ['ais_decoder.i'],
-                    libraries = [pythonLib, 'ais_decoder'],
+                    include_dirs = [pythonHeaders],
+                    libraries = ['python', 'ais_decoder'],
+                    library_dirs = [],
                     swig_opts=['-c++', '-I '+pythonHeaders])
 
 setup(name = 'AisDecoder',

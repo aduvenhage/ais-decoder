@@ -45,7 +45,15 @@ The project includes some examples of how to use the AIS decoder lib.
 ## Create a python module (WIP)
 Use SWIG to compile a python module.  The module is built around the 'ais_quick' interface. See 'examples/quick'. The SWIG interface file is located at 'python/ais_decoder.i'. Follow the decoder lib build instructions -- if the library is installed on the system the SWIG steps are easier.
 
-To build (tested with MacOS):
+To build and install
+
+```
+cd python
+python setup.py build
+sudo python setyp.py install
+```
+
+To build manually (tested with MacOS):
 
 ```
 cd python
