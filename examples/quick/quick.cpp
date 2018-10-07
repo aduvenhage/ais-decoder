@@ -2,6 +2,12 @@
 #include "../../ais_decoder/ais_quick.h"
 #include "../utils.h"
 
+
+void pushSentence(const char *_pszSentence)
+{
+    AIS::pushSentence(_pszSentence, strlen(_pszSentence), 0);
+}
+
 int main()
 {
     pushSentence("!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n");
@@ -11,10 +17,10 @@ int main()
     pushSentence("!AIVDM,1,1,,A,14eGrSPP00ncMJTO5C6aBwvP2D0?,0*7A\n");
     pushSentence("!AIVDM,1,1,,A,15MrVH0000KH<:V:NtBLoqFP2H9:,0*2F\n");
     
-    auto msg1 = popMessage();
-    auto msg2 = popMessage();
-    auto msg3 = popMessage();
-    auto msg4 = popMessage();
+    auto msg1 = AIS::popMessage();
+    auto msg2 = AIS::popMessage();
+    auto msg3 = AIS::popMessage();
+    auto msg4 = AIS::popMessage();
     
     return 0;
 }

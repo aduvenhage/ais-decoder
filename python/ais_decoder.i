@@ -11,6 +11,6 @@
 %template(pairss) std::pair<std::string, std::string>;
 %template(mapss) std::map<std::string, std::string>;
 
-extern int pushSentence(const char *_pszSentence);
-extern std::map<std::string, std::string> popMessage();
+extern int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
+extern std::map<std::string, std::string> popAisMessage();
 

@@ -37,7 +37,7 @@ unsigned int PayloadBuffer::getUnsignedValue(int _iBits)
     bits <<= 16 + (m_iBitIndex & 7);
     m_iBitIndex += _iBits;
 
-    return (uint64_t)(bits >> (64 - _iBits));
+    return (unsigned int)(bits >> (64 - _iBits));
 }
 
 /* unpack next _iBits (most significant bit is packed first; with sign check/conversion) */
@@ -59,7 +59,7 @@ int PayloadBuffer::getSignedValue(int _iBits)
     bits <<= 16 + (m_iBitIndex & 7);
     m_iBitIndex += _iBits;
 
-    return int64_t(bits) >> (64 - _iBits);
+    return (int)((int64_t)bits >> (64 - _iBits));
 }
 
 /* unback string (6 bit characters) -- already cleans string (removes trailing '@' and trailing spaces) */
@@ -175,7 +175,7 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
     }
     *((uint64_t*)out_ptr) = __builtin_bswap64(accumulator);
     
-    return _strPayload.size() * 6 - _iFillBits;
+    return (int)(_strPayload.size() * 6 - _iFillBits);
 }
 
 

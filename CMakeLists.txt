@@ -113,6 +113,7 @@ set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_RELEASE NDEBUG=1)
 set(PROJ_FILES
     ${CMAKE_SOURCE_DIR}/README.md
     ${CMAKE_SOURCE_DIR}/examples/utils.h
+    ${CMAKE_SOURCE_DIR}/python/ais_decoder.i
 )
 
 add_custom_target(proj_files SOURCES ${PROJ_FILES})

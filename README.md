@@ -43,7 +43,7 @@ The project includes some examples of how to use the AIS decoder lib.
 
 
 ## Create a python module (WIP)
-Use SWIG to compile a python module.  The module is built around the 'ais_quick' interface. See 'examples/quick'. The SWIG interface file is located at 'python/ais_decoder.i'.
+Use SWIG to compile a python module.  The module is built around the 'ais_quick' interface. See 'examples/quick'. The SWIG interface file is located at 'python/ais_decoder.i'. Follow the decoder lib build instructions -- if the library is installed on the system the SWIG steps are easier.
 
 To build (tested with MacOS):
 
@@ -54,6 +54,8 @@ c++ -c -fPIC ais_decoder_wrap.cxx -I /System/Library/Frameworks/Python.framework
 c++ -shared ais_decoder_wrap.o -lpython -lais_decoder -o _ais_decoder.so
 ```
 
+Make sure you use the correct python lib for the version you will be working with.
+
 
 ## Import and use python module (WIP)
 In python do the following to test:
@@ -61,8 +63,10 @@ In python do the following to test:
 ```
 import ais_decoder
 
-ais_decoder.pushSentence("!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n")
-msg = ais_decoder.popMessage().asdict()
+str = "!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n"
+ais_decoder.pushAisSentence(str, len(str), 0)
+
+msg = ais_decoder.popAisMessage().asdict()
 ```
 
 Message fragments, for multi-fragment messages, are managed and stored internally. 'msg' will be empty if no output is ready yet.

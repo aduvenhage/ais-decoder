@@ -20,6 +20,13 @@ class AisQuickDecoder : public AIS::AisDecoder
     AisQuickDecoder()
     {}
     
+    static AisQuickDecoder &instance()
+    {
+        static thread_local AisQuickDecoder decoder;
+        return decoder;
+    }
+    
+    /// Pop next message as key value pairs. Returns and empty map if no new messages are available.
     AisMessage popMessage() {
         AisMessage msg;
         
@@ -97,18 +104,17 @@ class AisQuickDecoder : public AIS::AisDecoder
 
 
 
-AisQuickDecoder  g_decoder;
 
-
-
-int pushSentence(const char *_pszSentence)
+/* Push new data onto the decoder. Scans for a complete line and only consumes one line at a time. Returns the number of bytes processed. */
+int AIS::pushSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset)
 {
-    return (int)g_decoder.decodeMsg(_pszSentence, std::strlen(_pszSentence), 0);
+    return (int)AisQuickDecoder::instance().decodeMsg(_pNmeaBuffer, _uBufferSize, _uOffset);
 }
 
 
-std::map<std::string, std::string> popMessage()
+/* Pop next message as key value pairs. Returns and empty map if no new messages are available. */
+std::map<std::string, std::string> AIS::popMessage()
 {
-    auto msg = g_decoder.popMessage();
+    auto msg = AisQuickDecoder::instance().popMessage();
     return std::move(msg.m_fields);
 }
