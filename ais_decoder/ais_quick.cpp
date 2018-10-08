@@ -1,6 +1,7 @@
 
 #include "ais_quick.h"
 #include "ais_decoder.h"
+#include "ais_file.h"
 
 #include <queue>
 
@@ -47,6 +48,12 @@ class AisQuickDecoder : public AIS::AisDecoder
         return m_messages.size();
     }
 
+    /// decode all sentences and buffer trailing data internally until next call
+    void decodeChunk(const char *_pNmeaBuffer, size_t _uBufferSize) {
+        m_buffer.append(_pNmeaBuffer, _uBufferSize);
+        AIS::processAisBuffer(*this, m_buffer);
+    }
+    
  protected:
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {
         AisMessage msg;
@@ -235,9 +242,9 @@ class AisQuickDecoder : public AIS::AisDecoder
     }
     
  private:
-    std::queue<AisMessage>      m_messages;
+    std::queue<AisMessage>      m_messages;     ///< decoded messages -- quick decoder output
+    AIS::FileBuffer             m_buffer;       ///< buffer used internally to decode chunks of data
 };
-
 
 
 
@@ -246,6 +253,13 @@ class AisQuickDecoder : public AIS::AisDecoder
 int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset)
 {
     return (int)AisQuickDecoder::instance().decodeMsg(_pNmeaBuffer, _uBufferSize, _uOffset);
+}
+
+
+/* Push new data onto the decoder. Scans for all sentences in data and buffers remaining data internally until the next call. Returns the number of bytes processed. */
+void pushAisChunk(const char *_pNmeaBuffer, size_t _uBufferSize)
+{
+    AisQuickDecoder::instance().decodeChunk(_pNmeaBuffer, _uBufferSize);
 }
 
 

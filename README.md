@@ -21,6 +21,7 @@ Some time was also spent on improving the speed of the NMEA string processing to
 - [x] Profile and improve speed 
 - [x] Validate fragment count and fragment number values
 - [x] Investigate faster ascii de-armouring and bit packing techniques (thanks to Frans van den Bergh)
+- [x] Add python interface
 
 - [ ] Validate talker IDs
 - [ ] Look at multiple threads/decoders working on the same file, for very large files
@@ -78,6 +79,6 @@ n = ais_decoder.numAisMessages()
 msg = ais_decoder.popAisMessage().asdict()
 ```
 
-Message fragments, for multi-fragment messages, are managed and stored internally. 'msg' will be empty if no output is ready yet.
+Message fragments, for multi-fragment messages, are managed and stored internally.  'msg' will be empty if no output is ready yet. 'pushAisSentence(...)' scans for one sentence only and sentences should always end with a newline.  'pushAisSentence(...)' also throws Python 'RuntimeError' exceptions on message errors.
 
-'pushAisSentence(...)' also throws Python RuntimeError exceptions on message errors.
+The interface also has 'pushChunk(data, len)' that accepts any number of messages. Incomplete sentences at the end of the supplied chunk will be buffered until the next call.

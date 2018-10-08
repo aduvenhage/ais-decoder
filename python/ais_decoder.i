@@ -21,6 +21,7 @@
 %template(mapss) std::map<std::string, std::string>;
 
 extern int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
+extern void pushAisChunk(const char *_pNmeaBuffer, size_t _uBufferSize);
 extern std::map<std::string, std::string> popAisMessage();
 extern int numAisMessages();
 

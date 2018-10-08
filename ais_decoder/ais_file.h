@@ -20,6 +20,11 @@ namespace AIS
      */
     struct FileBuffer
     {
+        FileBuffer()
+            :m_data(512, 0),
+             m_uSize(0)
+        {}
+        
         FileBuffer(size_t _uReservedSize)
             :m_data(_uReservedSize, 0),
              m_uSize(0)
@@ -32,21 +37,23 @@ namespace AIS
         
         void resize(size_t _uSize) {
             m_uSize = _uSize;
-            if (m_uSize > m_data.size())
-            {
+            if (m_uSize > m_data.size()) {
                 m_data.resize(m_uSize);
             }
         }
         
-        void pop_front(size_t _uSize)
-        {
-            if (_uSize < m_uSize)
-            {
+        void append(const char *_pData, size_t _uSize) {
+            size_t uOffset = size();
+            resize(uOffset + _uSize);
+            memcpy(data() + uOffset, _pData, _uSize);
+        }
+        
+        void pop_front(size_t _uSize) {
+            if (_uSize < m_uSize) {
                 std::memmove((char*)m_data.data(), (char*)m_data.data() + _uSize, m_uSize - _uSize);
                 m_uSize -= _uSize;
             }
-            else
-            {
+            else {
                 m_uSize = 0;
             }
         }
@@ -54,6 +61,27 @@ namespace AIS
         std::vector<char>       m_data;
         size_t                  m_uSize;
     };
+    
+
+    /// Process as much of the data in buffer as possible. Data used is erased from buffer and data not processed is left at front of buffer.
+    inline void processAisBuffer(AIS::AisDecoder &_decoder, FileBuffer &_buffer)
+    {
+        size_t uOffset = 0;
+        for (;;)
+        {
+            size_t n = _decoder.decodeMsg(_buffer.data(), _buffer.size(), uOffset);
+            if (n > 0)
+            {
+                uOffset += n;
+            }
+            else
+            {
+                break;
+            }
+        }
+        
+        _buffer.pop_front(uOffset);
+    }
     
     
     /**
@@ -86,26 +114,11 @@ namespace AIS
                     buffer.resize(uOffset + nb);
                     
                     // process as much of the buffer as possible
-                    uOffset = 0;
-                    for (;;)
-                    {
-                        size_t n = _decoder.decodeMsg(buffer.data(), buffer.size(), uOffset);
-                        if (n > 0)
-                        {
-                            uOffset += n;
-                        }
-                        else
-                        {
-                            break;
-                        }
-                    }
-                    
-                    // erase processed data (some data may be left at end of buffer; should be quick -- left over data is small)
-                    buffer.pop_front(uOffset);
-                    uTotalBytes += nb;
+                    processAisBuffer(_decoder, buffer);
                     
                     // report progress
                     _progressCb(uTotalBytes, _decoder);
+                    uTotalBytes += nb;
                 }
             }
             

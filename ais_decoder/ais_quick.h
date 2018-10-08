@@ -11,6 +11,9 @@
 /// Push new data onto the decoder. Scans for a complete line and only consumes one line at a time. Returns the number of bytes processed.
 int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
 
+/// Push new data onto the decoder. Scans for all sentences in data and buffers remaining data until the next call. Returns the number of bytes processed.
+void pushAisChunk(const char *_pNmeaBuffer, size_t _uBufferSize);
+
 /// Pop next message as key value pairs. Returns and empty map if no new messages are available.
 std::map<std::string, std::string> popAisMessage();
 
