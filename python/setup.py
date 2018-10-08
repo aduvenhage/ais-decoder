@@ -13,7 +13,7 @@ call(["make", "install"])
 
 # find python header and lib folders
 info = get_paths()
-pythonHeaders = info['include']
+pathHeaders = info['include']
 
 # build module
 print("=================================================")
@@ -22,10 +22,10 @@ print("=================================================")
 
 module1 = Extension('_ais_decoder',
                     ['ais_decoder.i'],
-                    include_dirs = [pythonHeaders],
-                    libraries = ['python', 'ais_decoder'],
+                    include_dirs = [pathHeaders],
+                    libraries = ['ais_decoder'],
                     library_dirs = [],
-                    swig_opts=['-c++', '-I '+pythonHeaders])
+                    swig_opts=['-c++', '-I '+pathHeaders])
 
 setup(name = 'AisDecoder',
       version = '1.0',
