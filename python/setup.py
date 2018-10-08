@@ -1,9 +1,24 @@
 from distutils.core import setup, Extension
 from sysconfig import get_paths
+from subprocess import call
 
+# build and install AIS decoder lib
+print("===============================================")
+print("Building and installing C++ AIS Decoder Library")
+print("===============================================")
 
-info = get_paths()  # a dictionary of key-paths
+call(["cmake", "../", "-DCMAKE_BUILD_TYPE=RELEASE"])
+call(["make"])
+call(["make", "install"])
+
+# find python header and lib folders
+info = get_paths()
 pythonHeaders = info['include']
+
+# build module
+print("=================================================")
+print("Building and installing Python AIS Decoder Module")
+print("=================================================")
 
 module1 = Extension('_ais_decoder',
                     ['ais_decoder.i'],

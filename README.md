@@ -44,9 +44,9 @@ The project includes some examples of how to use the AIS decoder lib.
 
 
 ## Create a python module (WIP)
-Use SWIG to compile a python module.  The module is built around the 'ais_quick' interface. See 'examples/quick'. The SWIG interface file is located at 'python/ais_decoder.i'. Follow the decoder lib build instructions -- if the library is installed on the system the SWIG steps are easier.
+The module is built around the 'ais_quick' interface. See 'examples/quick'. This project uses SWIG to compile a python module.  The SWIG interface file is located at 'python/ais_decoder.i'.
 
-To build and install
+To build and install using 'setuptools':
 
 ```
 cd python
@@ -54,7 +54,10 @@ python setup.py build
 sudo python setyp.py install
 ```
 
+The setup script does try to build and install the C++ library automatically.  If this fails see the [build](#build) instructions.
+
 To build manually (tested with MacOS):
+Follow the decoder lib [build](#build) instructions first -- if the library is installed on the system the SWIG steps are easier.
 
 ```
 cd python
@@ -79,7 +82,8 @@ n = ais_decoder.numAisMessages()
 msg = ais_decoder.popAisMessage().asdict()
 ```
 
-Message fragments, for multi-fragment messages, are managed and stored internally.  'msg' will be empty if no output is ready yet. 'pushAisSentence(...)' scans for one sentence only and sentences should always end with a newline.
+
+'pushAisSentence(...)' scans for one sentence only and sentences should always end with a newline.  'popAisMessage().asdict()' returns a Python dictionary with the message fields. Message fragments, for multi-fragment messages, are managed and stored internally.  'msg' will be empty if no output is ready yet.
 
 The interface also has 'pushChunk(data, len)' that accepts any number of messages. Incomplete sentences at the end of the supplied chunk will be buffered until the next call.
 
