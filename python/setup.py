@@ -5,7 +5,8 @@ from pprint import pprint
 info = get_paths()  # a dictionary of key-paths
 pythonHeaders = info['include']
 
-module1 = Extension('_ais_decoder', ['ais_decoder.i'],
+module1 = Extension('_ais_decoder',
+                    ['ais_decoder.i'],
                     include_dirs = [pythonHeaders],
                     libraries = ['python', 'ais_decoder'],
                     library_dirs = [],

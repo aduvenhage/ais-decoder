@@ -114,6 +114,7 @@ set(PROJ_FILES
     ${CMAKE_SOURCE_DIR}/README.md
     ${CMAKE_SOURCE_DIR}/examples/utils.h
     ${CMAKE_SOURCE_DIR}/python/ais_decoder.i
+    ${CMAKE_SOURCE_DIR}/python/setup.py
 )
 
 add_custom_target(proj_files SOURCES ${PROJ_FILES})

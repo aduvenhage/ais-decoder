@@ -74,7 +74,10 @@ import ais_decoder
 str = "!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n"
 ais_decoder.pushAisSentence(str, len(str), 0)
 
+n = ais_decoder.numAisMessages()
 msg = ais_decoder.popAisMessage().asdict()
 ```
 
 Message fragments, for multi-fragment messages, are managed and stored internally. 'msg' will be empty if no output is ready yet.
+
+'pushAisSentence(...)' also throws Python RuntimeError exceptions on message errors.

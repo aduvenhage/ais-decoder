@@ -5,7 +5,7 @@
 
 void pushSentence(const char *_pszSentence)
 {
-    AIS::pushSentence(_pszSentence, strlen(_pszSentence), 0);
+    pushAisSentence(_pszSentence, strlen(_pszSentence), 0);
 }
 
 int main()
@@ -17,10 +17,10 @@ int main()
     pushSentence("!AIVDM,1,1,,A,14eGrSPP00ncMJTO5C6aBwvP2D0?,0*7A\n");
     pushSentence("!AIVDM,1,1,,A,15MrVH0000KH<:V:NtBLoqFP2H9:,0*2F\n");
     
-    auto msg1 = AIS::popMessage();
-    auto msg2 = AIS::popMessage();
-    auto msg3 = AIS::popMessage();
-    auto msg4 = AIS::popMessage();
+    auto msg1 = popAisMessage();
+    auto msg2 = popAisMessage();
+    auto msg3 = popAisMessage();
+    auto msg4 = popAisMessage();
     
     return 0;
 }
