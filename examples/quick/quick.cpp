@@ -2,6 +2,9 @@
 #include "../../ais_decoder/ais_quick.h"
 #include "../utils.h"
 
+#include <cstring>
+
+
 
 void pushSentence(const char *_pszSentence)
 {

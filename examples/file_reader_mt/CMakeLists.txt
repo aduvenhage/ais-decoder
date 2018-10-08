@@ -29,7 +29,7 @@ ELSE(WIN32)
         TARGET_LINK_LIBRARIES(${targetname} "-stdlib=libc++")
 
     ELSE(MACX)
-        TARGET_LINK_LIBRARIES(${targetname} "-Wl,--no-as-needed,-ldl,-lpthread,-luuid")
+        TARGET_LINK_LIBRARIES(${targetname} "-Wl,--no-as-needed,-ldl,-lpthread")
         TARGET_LINK_LIBRARIES(${targetname} ais_decoder)
 
     ENDIF(MACX)

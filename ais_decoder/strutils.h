@@ -15,6 +15,7 @@
 
 namespace
 {
+#ifndef __GNUC__
     // from 'https://github.com/freebsd/freebsd/blob/master/lib/libc/string/memrchr.c'
     inline void *memrchr(const void *s, int c, size_t n)
     {
@@ -31,6 +32,7 @@ namespace
         
         return nullptr;
     }
+#endif
 };
 
 

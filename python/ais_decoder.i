@@ -2,7 +2,7 @@
 %module ais_decoder
 %{
     /* Put header files here or function declarations like below */
-    #include "ais_decoder/ais_quick.h"
+    #include <ais_decoder/ais_quick.h>
 %}
 
 %include std_string.i
