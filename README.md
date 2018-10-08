@@ -51,7 +51,7 @@ The setup script does try to build and install the C++ library automatically and
 
 ```
 cd python
-python setup.py build
+sudo python setup.py build
 sudo python setyp.py install
 ```
 
