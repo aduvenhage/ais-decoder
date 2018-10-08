@@ -2,6 +2,7 @@
 #include "ais_quick.h"
 #include "ais_decoder.h"
 #include "ais_file.h"
+#include "ais_utils.h"
 
 #include <queue>
 
@@ -59,7 +60,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(_uMsgType);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["nav_status"] = std::to_string(_uNavstatus);
         msg.m_fields["rot"] = std::to_string(_iRot);
         msg.m_fields["sog"] = std::to_string(_uSog);
@@ -77,7 +78,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(_uMsgType);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["year"] = std::to_string(_uYear);
         msg.m_fields["month"] = std::to_string(_uMonth);
         msg.m_fields["day"] = std::to_string(_uDay);
@@ -98,7 +99,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(5);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["imo"] = std::to_string(_uImo);
         msg.m_fields["callsign"] = _strCallsign;
         msg.m_fields["name"] = _strName;
@@ -122,7 +123,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(9);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["sog"] = std::to_string(_uSog);
         msg.m_fields["pos_accuracy"] = std::to_string(_bPosAccuracy);
         msg.m_fields["pos_lon"] = std::to_string(_iPosLon);
@@ -137,7 +138,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(18);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["sog"] = std::to_string(_uSog);
         msg.m_fields["pos_accuracy"] = std::to_string(_bPosAccuracy);
         msg.m_fields["pos_lon"] = std::to_string(_iPosLon);
@@ -154,7 +155,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(19);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["sog"] = std::to_string(_uSog);
         msg.m_fields["pos_accuracy"] = std::to_string(_bPosAccuracy);
         msg.m_fields["pos_lon"] = std::to_string(_iPosLon);
@@ -176,7 +177,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(21);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["aid_type"] = std::to_string(_uAidType);
         msg.m_fields["pos_accuracy"] = std::to_string(_bPosAccuracy);
         msg.m_fields["pos_lon"] = std::to_string(_iPosLon);
@@ -195,7 +196,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         
         msg.m_fields["msg"] = std::to_string(24);
         msg.m_fields["part"] = "A";
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["name"] = _strName;
         
         m_messages.push(std::move(msg));
@@ -206,6 +207,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         
         msg.m_fields["msg"] = std::to_string(24);
         msg.m_fields["part"] = "B";
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["callsign"] = _strCallsign;
         msg.m_fields["type"] = std::to_string(_uType);
         msg.m_fields["to_bow"] = std::to_string(_uToBow);
@@ -220,7 +222,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(27);
-        msg.m_fields["mmsi"] = std::to_string(_uMmsi);
+        msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["nav_status"] = std::to_string(_uNavstatus);
         msg.m_fields["sog"] = std::to_string(_uSog);
         msg.m_fields["pos_accuracy"] = std::to_string(_bPosAccuracy);

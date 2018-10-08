@@ -106,4 +106,4 @@ except:
     print("Error.")
 ```
 
-Interface functions can throws Python 'RuntimeError' exceptions on critical errors, but message decoding errors are reported back as a AIS message with 'msg=0' and appropriate error information.
+Interface functions can throw Python 'RuntimeError' exceptions on critical errors, but message decoding errors are reported back as a AIS message with 'msg=0' and appropriate error information.
