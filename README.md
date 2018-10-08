@@ -104,7 +104,7 @@ try:
         print(msg)
 
 except RuntimeError as err:
-    print("Runtime error.", err)
+    print("Runtime error. ", err)
 except:
     print("Error.")
 ```
