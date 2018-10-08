@@ -79,6 +79,31 @@ n = ais_decoder.numAisMessages()
 msg = ais_decoder.popAisMessage().asdict()
 ```
 
-Message fragments, for multi-fragment messages, are managed and stored internally.  'msg' will be empty if no output is ready yet. 'pushAisSentence(...)' scans for one sentence only and sentences should always end with a newline.  'pushAisSentence(...)' also throws Python 'RuntimeError' exceptions on message errors.
+Message fragments, for multi-fragment messages, are managed and stored internally.  'msg' will be empty if no output is ready yet. 'pushAisSentence(...)' scans for one sentence only and sentences should always end with a newline.
 
 The interface also has 'pushChunk(data, len)' that accepts any number of messages. Incomplete sentences at the end of the supplied chunk will be buffered until the next call.
+
+```
+import ais_decoder
+
+try:
+    str = "!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n"
+    ais_decoder.pushAisChunk(str, len(str))
+
+    n = ais_decoder.numAisMessages()
+    print("num messages = ", n)
+
+    while True:
+        if ais_decoder.numAisMessages() == 0:
+            break
+
+        msg = ais_decoder.popAisMessage().asdict()
+        print(msg)
+
+except RuntimeError as err:
+    print("Runtime error.", err)
+except:
+    print("Error.")
+```
+
+Interface functions can throws Python 'RuntimeError' exceptions on critical errors, but message decoding errors are reported back as a AIS message with 'msg=0' and appropriate error information.
