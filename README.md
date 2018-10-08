@@ -48,6 +48,8 @@ The module is built around the 'ais_quick' interface. See 'examples/quick'. This
 
 To build and install using 'setuptools':
 
+The build script depends on cmake for building the C++ lib.
+
 ```
 cd python
 python setup.py build
@@ -57,7 +59,8 @@ sudo python setyp.py install
 The setup script does try to build and install the C++ library automatically.  If this fails see the [build](#build) instructions.
 
 To build manually (tested with MacOS):
-Follow the decoder lib [build](#build) instructions first -- if the library is installed on the system the SWIG steps are easier.
+
+Follow the decoder lib [build](#build) instructions first -- if the library is installed on the system, the SWIG steps are easier.
 
 ```
 cd python
