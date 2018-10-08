@@ -72,7 +72,7 @@ On Linux you will to install the following:
 - cmake
 - g++
 - swig
-- python
+- python-dev
 
 ## Import and use python module (WIP)
 In python do the following to test:
