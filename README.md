@@ -69,10 +69,11 @@ Make sure you use the correct python lib for the version you will be working wit
 
 ### Build Notes
 On Linux you will to install the following:
-- cmake
-- g++
-- swig
-- python-dev
+- 'cmake'
+- 'g++'
+- 'swig'
+- 'python-dev'
+- 'python3-distutils' for Python3
 
 ## Import and use python module (WIP)
 In python do the following to test:
