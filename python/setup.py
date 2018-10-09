@@ -2,6 +2,7 @@ from distutils.core import setup, Extension
 from sysconfig import get_paths
 from subprocess import call
 
+
 # build and install AIS decoder lib
 print("===============================================")
 print("Building and installing C++ AIS Decoder Library")
