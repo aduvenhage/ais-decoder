@@ -73,7 +73,7 @@ On Linux you will to install the following:
 - 'g++'
 - 'swig'
 - 'python-dev'
-- 'python3-distutils' for Python3
+- 'python3-distutils' *for Python3*
 
 ## Import and use python module (WIP)
 In python do the following to test:
