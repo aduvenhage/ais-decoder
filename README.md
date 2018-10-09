@@ -68,7 +68,7 @@ c++ -shared ais_decoder_wrap.o -lpython -lais_decoder -o _ais_decoder.so
 Make sure you use the correct python lib for the version you will be working with.
 
 ### Build Notes
-On Linux you will to install the following:
+On Linux you will have to install the following:
 - 'cmake'
 - 'g++'
 - 'swig'
@@ -76,7 +76,7 @@ On Linux you will to install the following:
 - 'python3-distutils' *for Python3*
 
 ## Import and use python module (WIP)
-In python do the following to test:
+In python, do the following to test:
 
 ```
 import ais_decoder
