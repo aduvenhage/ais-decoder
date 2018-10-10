@@ -72,7 +72,7 @@ On Linux you will have to install the following:
 - 'cmake'
 - 'g++'
 - 'swig'
-- 'python-dev'
+- 'python-dev' or 'python3-dev' *for Python3*
 - 'python3-distutils' *for Python3*
 
 ## Import and use python module (WIP)
