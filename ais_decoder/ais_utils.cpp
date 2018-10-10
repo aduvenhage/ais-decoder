@@ -9,7 +9,9 @@ namespace
     /// returns sorted list of AIS vessel class names
     std::vector<std::string> loadAisVesselShortStrings()
     {
-        std::vector<std::string> vecVesselTypes(100, "UNS");
+        std::vector<std::string> vecVesselTypes(100);
+        
+        vecVesselTypes[0] = "";    // Not available (default)
         
         vecVesselTypes[20] = "WIG";//Wing in ground (WIG)";
         vecVesselTypes[21] = "WIG";//"Wing in ground (WIG), Hazardous category A";
@@ -97,7 +99,9 @@ namespace
     /// returns sorted list of AIS vessel class names
     std::vector<std::string> loadAisVesselFullStrings()
     {
-        std::vector<std::string> vecVesselTypes(100, "");
+        std::vector<std::string> vecVesselTypes(100);
+        
+        vecVesselTypes[0] = "";         // Not available (default)
         
         vecVesselTypes[20] = "Wing in ground (WIG)";
         vecVesselTypes[21] = "Wing in ground (WIG), Hazardous category A";
@@ -174,16 +178,16 @@ namespace
         vecVesselTypes[88] = "Tanker, Unknown category";
         vecVesselTypes[89] = "Tanker, Unknown category";
         
-        vecVesselTypes[90] = "Other Type";
-        vecVesselTypes[91] = "Other Type, Hazardous category A";
-        vecVesselTypes[92] = "Other Type, Hazardous category B";
-        vecVesselTypes[93] = "Other Type, Hazardous category C";
-        vecVesselTypes[94] = "Other Type, Hazardous category D";
-        vecVesselTypes[95] = "Other Type, Unknown category";
-        vecVesselTypes[96] = "Other Type, Unknown category";
-        vecVesselTypes[97] = "Other Type, Unknown category";
-        vecVesselTypes[98] = "Other Type, Unknown category";
-        vecVesselTypes[99] = "Other Type, Unknown category";
+        vecVesselTypes[90] = "Other";
+        vecVesselTypes[91] = "Other, Hazardous category A";
+        vecVesselTypes[92] = "Other, Hazardous category B";
+        vecVesselTypes[93] = "Other, Hazardous category C";
+        vecVesselTypes[94] = "Other, Hazardous category D";
+        vecVesselTypes[95] = "Other, Unknown category";
+        vecVesselTypes[96] = "Other, Unknown category";
+        vecVesselTypes[97] = "Other, Unknown category";
+        vecVesselTypes[98] = "Other, Unknown category";
+        vecVesselTypes[99] = "Other, Unknown category";
         
         return vecVesselTypes;
     }
@@ -192,7 +196,7 @@ namespace
     /// returns sorted list of AIS vessel navigation strings
     std::vector<std::string> loadAisNavigationalStatusStrings()
     {
-        std::vector<std::string> vecNavigationalStatus(16, "");
+        std::vector<std::string> vecNavigationalStatus(16);
         
         vecNavigationalStatus[0] = "Under way using engine";
         vecNavigationalStatus[1] = "At anchor";
@@ -209,6 +213,8 @@ namespace
         vecNavigationalStatus[12] = "Reserved for future use";
         vecNavigationalStatus[13] = "Reserved for future use";
         vecNavigationalStatus[14] = "AIS-SART is active";
+        
+        vecNavigationalStatus[15] = ""; // Not defined (default)
         
         return vecNavigationalStatus;
     }
@@ -618,7 +624,7 @@ int AIS::getAisVesselClassCode(const std::string &_strClass)
         }
     }
     
-    return 90;
+    return 0;
 }
 
 

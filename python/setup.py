@@ -1,4 +1,5 @@
 from distutils.core import setup, Extension
+
 from sysconfig import get_paths
 from subprocess import call
 
@@ -23,7 +24,7 @@ print("=================================================")
 
 module1 = Extension('_ais_decoder',
                     ['ais_decoder.i'],
-                    include_dirs = [pathHeaders],
+                    include_dirs = [],
                     libraries = ['ais_decoder'],
                     library_dirs = [],
                     swig_opts=['-c++', '-I '+pathHeaders])
