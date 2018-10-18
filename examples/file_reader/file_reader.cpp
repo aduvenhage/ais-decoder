@@ -46,7 +46,7 @@ class AisDummyDecoder : public AIS::AisDecoder
     
     virtual void onSentence(const AIS::StringRef &_strSentence) override {}
     
-    virtual void onMessage(const AIS::StringRef &_strMessage) override {}
+    virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {}
     
     virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
     
@@ -96,9 +96,11 @@ int main()
     // to test - just keep on loading files forever
     for (;;)
     {
-        //testAis("LSS_20180514.ITU123_data.bu1");
-        //testAis("nmea-sample_rep.txt");
-
+        /*
+        testAis("LSS_20180514.ITU123_data.bu1");
+        testAis("nmea-sample_rep.txt");
+        */
+        
         testAis("20170210.log");
         testAis("20170211.log");
         testAis("20170212.log");
@@ -107,6 +109,12 @@ int main()
         testAis("20170215.log");
         testAis("20170216.log");
         testAis("20170217.log");
+
+        /*
+        testAis("datacron_20160103.txt");
+        testAis("datacron_20160104.txt");
+        testAis("datacron_20160105.txt");
+        */
     }
 
     return 0;

@@ -24,6 +24,9 @@ namespace AIS
     /// does a lookup of the country/flag details from MMSI
     const std::pair<std::string, std::string> &getAisCountryCodes(const std::string &_strMmsi);
     
+    /// does a lookup of the transmitter class from MMSI
+    const std::string &getAisTransmitterClass(const std::string &_strMmsi);
+    
     /// formats name and removes illegal characters
     std::string getCleanName(const std::string &_str);
 

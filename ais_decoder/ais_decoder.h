@@ -13,7 +13,9 @@
 namespace AIS
 {
     // constants
-    const char ASCII_CHARS[] = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_ !\"#$%&'()*+,-./0123456789:;<=>?";
+    const char ASCII_CHARS[]                = "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_ !\"#$%&'()*+,-./0123456789:;<=>?";
+    const size_t MAX_FRAGMENTS              = 5;
+    const size_t MAX_CHARS_PER_FRAGMENT     = 82;
     
     
     /**
@@ -22,8 +24,7 @@ namespace AIS
     class PayloadBuffer
     {
      private:
-        /// NOTE: the max payload size could be up to '(5 fragments * 82 chars * 6bits / 8) = 308' bytes
-        const static int MAX_PAYLOAD_SIZE = 512;
+        const static int MAX_PAYLOAD_SIZE = MAX_FRAGMENTS * MAX_CHARS_PER_FRAGMENT * 6 / 8 + 1;
         
      public:
         PayloadBuffer();
@@ -70,19 +71,31 @@ namespace AIS
     class MultiSentence
     {
      public:
-        MultiSentence(int _iFragmentCount, const StringRef &_strFirstFragment);
+        /// add first fragment
+        MultiSentence(int _iFragmentCount, const StringRef &_strFirstFragment, const StringRef &_strHeader, const StringRef &_strFooter);
         
+        /// add more fragments (returns false if there is an fragment indexing error)
         bool addFragment(int _iFragmentNum, const StringRef &_strFragment);
+        
+        /// returns true if all fragments have been received
         bool isComplete() const;
         
-        /// NOTE: the return stays valid only while this object exists and addFragment is not called
-        const StringRef &toString() const {return m_strPayload;}
+        /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
+        const StringRef &payload() const {return m_strPayload;}
+        
+        /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
+        const StringRef &header() const {return m_strHeader;}
+        
+        /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
+        const StringRef &footer() const {return m_strFooter;}
         
      protected:
         int                     m_iFragmentCount;
         int                     m_iFragmentNum;
+        StringRef               m_strHeader;        ///< footer
+        StringRef               m_strFooter;
         StringRef               m_strPayload;
-        std::vector<char>       m_vecStrData;       ///< data backing for m_strPayload string ref
+        std::vector<char>       m_vecStrData;       ///< data backing for string refs
     };
     
     
@@ -92,6 +105,11 @@ namespace AIS
      
      A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods as well as error handling methods.
      Some user onTypeXX(...) methods are attached to multiple message types, for example: 123 (types 1, 2 & 3) and 411 (types 4 & 11), in which case the message type is the first parameter.
+     
+     Callback sequence:
+        - onSentence(..) provides raw message fragments as they are received
+        - onTypeXX(...) provides message specific callbacks
+        - onMessage(...) provides message payload of the message just decoded
      
      Basic error checking, including CRC checks, are done and also reported.
      No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
@@ -134,6 +152,9 @@ namespace AIS
         
         // user defined callbacks
      protected:
+        /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload; may be overloaded for app specific meta data)
+        virtual StringRef onScanForPayload(const StringRef &_strSentence);
+        
         virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
         virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
                                bool _bPosAccuracy, int _iPosLon, int _iPosLat) = 0;
@@ -159,13 +180,13 @@ namespace AIS
         
         virtual void onType27(unsigned int _uMmsi, unsigned int _uNavstatus, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog) = 0;
         
-        /// called on every sentence received (includes all characters, including NL, CR, etc.; called before any validation or CRCs checks are performed)
+        /// called on every sentence (raw data) received (includes all characters, including NL, CR, etc.; called before any validation or CRCs checks are performed)
         virtual void onSentence(const StringRef &_strSentence) = 0;
         
-        /// called on every full message (i.e. all fragments), before onTypeXX specific message
-        virtual void onMessage(const StringRef &_strPayload) = 0;
+        /// called on every full message (concatenated fragments -- payload), after 'onTypeXX(...)'
+        virtual void onMessage(const StringRef &_strPayload, const StringRef &_strHeader, const StringRef &_strFooter) = 0;
         
-        /// called when message type is not supported (i.e. onTypeXX not implemented), and onMessage(...) is still called
+        /// called when message type is not supported (i.e. 'onTypeXX(...)' not implemented), and 'onMessage(...)' is still called
         virtual void onNotDecoded(const StringRef &_strPayload, int _iMsgType) = 0;
         
         /// called when any decoding error ocurred

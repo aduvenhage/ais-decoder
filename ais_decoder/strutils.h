@@ -146,7 +146,25 @@ namespace AIS
         
         void assign(const char *_psRef, size_t _uSize) {m_psRef = _psRef; m_uSize = _uSize;}
         
-        operator std::string () const {return std::string(m_psRef, m_psRef + m_uSize);}
+        operator std::string () const {
+            if (m_uSize > 0) {
+                return std::string(m_psRef, m_psRef + m_uSize);
+            }
+            else {
+                return "";
+            }
+        }
+        
+        StringRef sub(size_t _i, size_t _n = npos) {
+            if (_i < m_uSize)
+            {
+                return StringRef(m_psRef+_i, std::min(_n, m_uSize - _i));
+            }
+            else
+            {
+                return StringRef();
+            }
+        }
 
         const char        *m_psRef;
         size_t            m_uSize;
@@ -188,21 +206,22 @@ namespace AIS
      */
     inline size_t getLine(StringRef &_strOutput, const char *_pInput, size_t _uInputSize, size_t _uOffset)
     {
-        size_t chCount = 0;
         const size_t n = _uInputSize - _uOffset;
         const char *pData = _pInput + _uOffset;
 
-        // find NL
+        // find NL/LF
         const char* sentinel = pData + n;
         const char* next = (const char*)memchr(pData, '\n', n);
         
         if (next == nullptr || next >= sentinel) {
             return 0;
         } else {
-            // check for CR
-            chCount = next - pData - (*(next-1) == '\r' ? 1 : 0);
-            _strOutput = StringRef(pData, chCount);
-            return (next - pData) + 1;
+            // \note getLine() output includes CR & LF chars
+            int nb = next - pData + 1;
+            _strOutput.m_psRef = pData;
+            _strOutput.m_uSize = nb;
+            
+            return nb;
         }
 
         return 0;

@@ -24,4 +24,6 @@ extern int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t
 extern void pushAisChunk(const char *_pNmeaBuffer, size_t _uBufferSize);
 extern std::map<std::string, std::string> popAisMessage();
 extern int numAisMessages();
+extern std::string mmsi2country(const std::string &_strMmsi);
+extern std::string mmsi2class(const std::string &_strMmsi);
 

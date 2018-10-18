@@ -651,10 +651,12 @@ const std::pair<std::string, std::string> &AIS::getAisCountryCodes(const std::st
     std::string strFullMmsi = AIS::mmsi_to_string(_strMmsi);
     size_t uMid = 0;
     
-    if ( (strFullMmsi.compare(0, 1, "0") == 0) ||
-         (strFullMmsi.compare(0, 1, "8") == 0) )
+    if ( (strFullMmsi.compare(0, 3, "111") == 0) ||
+         (strFullMmsi.compare(0, 3, "970") == 0) ||
+         (strFullMmsi.compare(0, 3, "972") == 0) ||
+         (strFullMmsi.compare(0, 3, "974") == 0) )
     {
-        uMid = std::strtoul(strFullMmsi.substr(1, 3).c_str(), nullptr, 10);
+        uMid = std::strtoul(strFullMmsi.substr(3, 3).c_str(), nullptr, 10);
     }
     else if ( (strFullMmsi.compare(0, 2, "00") == 0) ||
               (strFullMmsi.compare(0, 2, "98") == 0) ||
@@ -662,12 +664,10 @@ const std::pair<std::string, std::string> &AIS::getAisCountryCodes(const std::st
     {
         uMid = std::strtoul(strFullMmsi.substr(2, 3).c_str(), nullptr, 10);
     }
-    else if ( (strFullMmsi.compare(0, 3, "111") == 0) ||
-              (strFullMmsi.compare(0, 3, "970") == 0) ||
-              (strFullMmsi.compare(0, 3, "972") == 0) ||
-              (strFullMmsi.compare(0, 3, "974") == 0) )
+    else if ( (strFullMmsi.compare(0, 1, "0") == 0) ||
+              (strFullMmsi.compare(0, 1, "8") == 0) )
     {
-        uMid = std::strtoul(strFullMmsi.substr(3, 3).c_str(), nullptr, 10);
+        uMid = std::strtoul(strFullMmsi.substr(1, 3).c_str(), nullptr, 10);
     }
     else
     {
@@ -682,6 +682,44 @@ const std::pair<std::string, std::string> &AIS::getAisCountryCodes(const std::st
     return countryList[uMid];
 }
 
+/* does a lookup of the transmitter class from MMSI */
+const std::string &AIS::getAisTransmitterClass(const std::string &_strMmsi)
+{
+    static std::vector<std::string> types = {
+        "",                                         // 0, Ship -- keep blank!
+        "Search and Resue Aircraft",                // 1,
+        "Search and Resue Transmitter",             // 2,
+        "Man Overboard Device",                     // 3,
+        "Emergency Position Beacon",                // 4,
+        "Net Marker",                               // 5,   \todo check for net marker MMSI rules in spec
+        "Coastal Station",                          // 6,
+        "Aid to Navigation",                        // 7,
+        "Auxiliary Craft",                          // 8,
+        "Group of Ships",                           // 9,
+        "Diver's Radio",                            // 10,
+        "Buoy"                                      // 11   \todo check for buoy MMSI rules in spec
+    };
+    
+    std::string strFullMmsi = AIS::mmsi_to_string(_strMmsi);
+
+    if (strFullMmsi.compare(0, 3, "000") == 0) return types[11];
+
+    else if (strFullMmsi.compare(0, 3, "111") == 0) return types[1];
+    else if (strFullMmsi.compare(0, 3, "970") == 0) return types[2];
+    else if (strFullMmsi.compare(0, 3, "972") == 0) return types[3];
+    else if (strFullMmsi.compare(0, 3, "974") == 0) return types[4];
+    
+    else if (strFullMmsi.compare(0, 3, "098") == 0) return types[5];
+
+    else if (strFullMmsi.compare(0, 2, "00") == 0) return types[6];
+    else if (strFullMmsi.compare(0, 2, "99") == 0) return types[7];
+    else if (strFullMmsi.compare(0, 2, "98") == 0) return types[8];
+    
+    else if (strFullMmsi.compare(0, 1, "0") == 0) return types[9];
+    else if (strFullMmsi.compare(0, 1, "8") == 0) return types[10];
+
+    return types[0];
+}
 
 /* formats name and removes illegal characters */
 std::string AIS::getCleanName(const std::string &_str)

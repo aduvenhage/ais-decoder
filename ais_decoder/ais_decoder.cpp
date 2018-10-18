@@ -180,10 +180,10 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
 
 
 /* calc CRC */
-uint8_t AIS::crc(const StringRef &_strLine)
+uint8_t AIS::crc(const StringRef &_strNmea)
 {
-    const unsigned char* in_ptr = (const unsigned char*)_strLine.data();
-    const unsigned char* in_sentinel  = in_ptr + _strLine.size();
+    const unsigned char* in_ptr = (const unsigned char*)_strNmea.data();
+    const unsigned char* in_sentinel  = in_ptr + _strNmea.size();
     const unsigned char* in_sentinel4 = in_sentinel - 4;
     
     uint8_t checksum = 0;
@@ -210,12 +210,27 @@ uint8_t AIS::crc(const StringRef &_strLine)
 
 
 
-MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFirstFragment)
+MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFirstFragment, const StringRef &_strHeader, const StringRef &_strFooter)
     :m_iFragmentCount(_iFragmentCount),
      m_iFragmentNum(1)
 {
+    m_vecStrData.reserve(_strHeader.size() + _strFooter.size() + MAX_FRAGMENTS * MAX_CHARS_PER_FRAGMENT);
+    
+    // add string data to internal buffer
+    if (_strHeader.size() > 0) {
+        m_vecStrData.insert(m_vecStrData.end(), _strHeader.data(), _strHeader.data() + _strHeader.size());
+    }
+    
+    if (_strFooter.size() > 0) {
+        m_vecStrData.insert(m_vecStrData.end(), _strFooter.data(), _strFooter.data() + _strFooter.size());
+    }
+    
     m_vecStrData.insert(m_vecStrData.end(), _strFirstFragment.data(), _strFirstFragment.data() + _strFirstFragment.size());
-    m_strPayload = StringRef(m_vecStrData.data(), m_vecStrData.size());
+
+    // setup string references
+    m_strHeader = StringRef(m_vecStrData.data(), _strHeader.size());
+    m_strFooter = StringRef(m_vecStrData.data() + _strHeader.size(), _strFooter.size());
+    m_strPayload = StringRef(m_vecStrData.data() + _strHeader.size() + _strFooter.size(), _strFirstFragment.size());
 }
 
 bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment)
@@ -223,9 +238,15 @@ bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment
     // check that fragments are added in order (out of order is an error)
     if (m_iFragmentNum == _iFragmentNum-1)
     {
+        // append data
         m_vecStrData.insert(m_vecStrData.end(), _strFragment.data(), _strFragment.data() + _strFragment.size());
-        m_strPayload = StringRef(m_vecStrData.data(), m_vecStrData.size());
         m_iFragmentNum++;
+
+        // setup string references
+        m_strHeader = StringRef(m_vecStrData.data(), m_strHeader.size());
+        m_strFooter = StringRef(m_vecStrData.data() + m_strHeader.size(), m_strFooter.size());
+        m_strPayload = StringRef(m_vecStrData.data() + m_strHeader.size() + m_strFooter.size(), m_vecStrData.size() - m_strHeader.size() - m_strFooter.size());
+        
         return true;
     }
     else
@@ -448,6 +469,10 @@ void AisDecoder::decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     _buffer.getUnsignedValue(4);                 // reserved
     auto name = _buffer.getString(120);
     auto type = _buffer.getUnsignedValue(8);
+    if (type > 99) {
+        type = 0;
+    }
+    
     auto toBow = _buffer.getUnsignedValue(9);
     auto toStern = _buffer.getUnsignedValue(9);
     auto toPort = _buffer.getUnsignedValue(6);
@@ -532,6 +557,10 @@ void AisDecoder::decodeType24(PayloadBuffer &_buffer, unsigned int _uMsgType, in
         }
         
         auto type = _buffer.getUnsignedValue(8);
+        if (type > 99) {
+            type = 0;
+        }
+        
         _buffer.getString(18);                       // vendor ID
         _buffer.getUnsignedValue(4);                 // unit model code
         _buffer.getUnsignedValue(20);                // serial number
@@ -649,6 +678,24 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
     }
 }
 
+/* called to find NMEA start (scan past any headers, META data, etc.; returns NMEA start index) */
+StringRef AisDecoder::onScanForPayload(const StringRef &_strSentence)
+{
+    const char *pCh = _strSentence.data();
+    if (*pCh == '\\')    // check for start of common META data block
+    {
+        pCh = (const char*)memchr(pCh+1, '\\', _strSentence.size()-1);
+    }
+    
+    if (pCh != nullptr)
+    {
+        return StringRef(pCh+1, _strSentence.size() - (pCh - _strSentence.data() + 1));
+    }
+    else
+    {
+        return _strSentence;
+    }
+}
 
 /* decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed) */
 size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset)
@@ -659,13 +706,19 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
     if (n > 0)
     {
         // provide raw data back to user
-        onSentence(StringRef(_pNmeaBuffer + _uOffset, n));
-                   
+        onSentence(strLine);
+        
+        // pull out NMEA sentence from line
+        // \todo do special processing on meta data to pull out message timestamps
+        auto strNmea = onScanForPayload(strLine);
+        auto strHeader = strLine.sub(0, strNmea.data() - strLine.data());
+        auto strFooter = strLine.sub(strHeader.size() + strNmea.size());
+        
         // check sentence CRC
-        if (checkCrc(strLine) == true)
+        if (checkCrc(strNmea) == true)
         {
             // decode sentence
-            size_t uWordCount = seperate(m_words, strLine);
+            size_t uWordCount = seperate(m_words, strNmea);
             
             // \todo What AIS talker IDs (words[0]) should we support? For now just allowing all of them..
             bool bValidMsg = (uWordCount >= 7) &&
@@ -682,7 +735,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                 if ( (iFragmentCount == 0) || (iFragmentCount > MAX_MSG_FRAGMENTS) )
                 {
                     m_uDecodingErrors++;
-                    onDecodeError(strLine, "Invalid fragment count value (" + std::to_string(iFragmentCount) + ").");
+                    onDecodeError(strNmea, "Invalid fragment count value (" + std::to_string(iFragmentCount) + ").");
                 }
                     
                 // decode simple sentence
@@ -690,13 +743,13 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                 {
                     try
                     {
-                        onMessage(strLine);
                         decodeMobileAisMsg(m_words[5], iFillBits);
+                        onMessage(strNmea, strHeader, strFooter);
                     }
                     catch (std::exception &ex)
                     {
                         m_uDecodingErrors++;
-                        onDecodeError(strLine, ex.what());
+                        onDecodeError(strNmea, ex.what());
                     }
                 }
                 
@@ -710,20 +763,20 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                     if (iMsgId >= (int)m_multiSentences.size())
                     {
                         m_uDecodingErrors++;
-                        onDecodeError(strLine, "Invalid message sequence id (" + std::to_string(iMsgId) + ").");
+                        onDecodeError(strNmea, "Invalid message sequence id (" + std::to_string(iMsgId) + ").");
                     }
                     
                     // check for valid message
                     else if ( (iFragmentNum == 0) || (iFragmentNum > iFragmentCount) )
                     {
                         m_uDecodingErrors++;
-                        onDecodeError(strLine, "Invalid message fragment number (" + std::to_string(iFragmentNum) + ").");
+                        onDecodeError(strNmea, "Invalid message fragment number (" + std::to_string(iFragmentNum) + ").");
                     }
                     
                     // create multi-sentence object with first message
                     else if (iFragmentNum == 1)
                     {
-                        m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5]);
+                        m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strHeader, strFooter);
                     }
                     
                     // update multi-sentence object with more fragments
@@ -744,13 +797,13 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                                     // decode whole payload and reset
                                     try
                                     {
-                                        onMessage(pMultiSentence->toString());
-                                        decodeMobileAisMsg(pMultiSentence->toString(), iFillBits);
+                                        decodeMobileAisMsg(pMultiSentence->payload(), iFillBits);
+                                        onMessage(pMultiSentence->payload(), pMultiSentence->header(), pMultiSentence->footer());
                                     }
                                     catch (std::exception &ex)
                                     {
                                         m_uDecodingErrors++;
-                                        onDecodeError(pMultiSentence->toString(), ex.what());
+                                        onDecodeError(pMultiSentence->payload(), ex.what());
                                     }
                                     
                                     m_multiSentences[iMsgId] = nullptr;
@@ -761,7 +814,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                                 // sentence error, so just reset
                                 m_uDecodingErrors++;
                                 m_multiSentences[iMsgId] = nullptr;
-                                onDecodeError(strLine, "Multi-sentence decoding failed.");
+                                onDecodeError(strNmea, "Multi-sentence decoding failed.");
                             }
                         }
                     }
@@ -770,13 +823,13 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
             else
             {
                 m_uDecodingErrors++;
-                onDecodeError(strLine, "Sentence not a valid.");
+                onDecodeError(strNmea, "Sentence not a valid.");
             }
         }
         else
         {
             m_uCrcErrors++;
-            onDecodeError(strLine, "Sentence decoding error. CRC check failed.");
+            onDecodeError(strNmea, "Sentence decoding error. CRC check failed.");
         }
         
         m_uTotalBytes += n;

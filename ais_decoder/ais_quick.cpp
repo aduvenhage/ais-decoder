@@ -235,7 +235,16 @@ class AisQuickDecoder : public AIS::AisDecoder
     
     virtual void onSentence(const AIS::StringRef &_strSentence) override {}
     
-    virtual void onMessage(const AIS::StringRef &_strMessage) override {}
+    virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
+        AisMessage msg;
+        
+        msg.m_fields["msg"] = std::to_string(0);
+        msg.m_fields["payload"] = _strMessage;
+        msg.m_fields["header"] = _strHeader;
+        msg.m_fields["footer"] = _strFooter;
+
+        m_messages.push(std::move(msg));
+    }
     
     virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
     
@@ -283,4 +292,18 @@ std::map<std::string, std::string> popAisMessage()
 int numAisMessages()
 {
     return AisQuickDecoder::instance().numMessages();
+}
+
+
+/* translates MMSI to country/flag */
+std::string mmsi2country(const std::string &_strMmsi)
+{
+    return AIS::getAisCountryCodes(_strMmsi).first;
+}
+
+
+/* translates MMSI to transmitter class */
+std::string mmsi2class(const std::string &_strMmsi)
+{
+    return AIS::getAisTransmitterClass(_strMmsi);
 }

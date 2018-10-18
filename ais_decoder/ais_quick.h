@@ -20,6 +20,12 @@ std::map<std::string, std::string> popAisMessage();
 /// Check how many messages are available.
 int numAisMessages();
 
+/// translates MMSI to country/flag
+std::string mmsi2country(const std::string &_strMmsi);
+
+/// translates MMSI to transmitter class
+std::string mmsi2class(const std::string &_strMmsi);
+
 
 
 #endif  // #ifndef AIS_QUICK_H
