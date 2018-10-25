@@ -60,9 +60,21 @@ namespace AIS
     /// Convert payload to decimal (de-armour) and concatenate 6bit decimal values into payload buffer. Returns the number of bits used.
     int decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _iFillBits);
     
+    
     /// calc CRC
     uint8_t crc(const StringRef &_strLine);
-
+    
+    
+    /**
+     Default implementation to scan through a sentence and extract NMEA string.
+     Look at 'onScanForNmea' user defined method on AisDecoder class.
+     
+     This implementation will scan past META data that start and end with a '\'.  It will also stop at NMEA CRC.
+     
+     */
+    StringRef defaultScanForNmea(const StringRef &_strSentence);
+    
+    
     
     /**
      Multi-sentence message container.
@@ -114,6 +126,8 @@ namespace AIS
      Basic error checking, including CRC checks, are done and also reported.
      No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
      
+     The 'onScanForNmea(...)' callback allows the decoder to support META data around the NMEA sentence.  The simplest implementation for this callback would just return the input parameter if no META data is expected.
+     
      */
     class AisDecoder
     {
@@ -152,8 +166,8 @@ namespace AIS
         
         // user defined callbacks
      protected:
-        /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload; may be overloaded for app specific meta data)
-        virtual StringRef onScanForPayload(const StringRef &_strSentence);
+        /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload; may be overloaded for app specific meta data; look at 'defaultScanForNmea' function)
+        virtual StringRef onScanForNmea(const StringRef &_strSentence) = 0;
         
         virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
         virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,

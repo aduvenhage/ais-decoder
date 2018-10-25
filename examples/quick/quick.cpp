@@ -6,6 +6,40 @@
 
 
 
+/*
+ 
+ 
+ 
+ 
+ 
+ 
+ This example demonstrates how to use the 'AIS Quick' interface.  This interface was created as a simple
+ interface for the SWIG/Python bindings.
+ 
+ The interface accepts new data through:
+ - 'pushAisSentence(...)' which consumes one sentence/line per call
+ 
+ - 'pushAisChunk(...)' which consumes a whole block of data, consuming all strings in the data. Any remaining
+   data (partial sentence) is buffered until the next call.
+ 
+ - 'popAisMessage(...)' returns the next decoded message as a set of key/value pairs (a dictionary in Python case).
+ 
+ The AIS Decoder is created by inheriting from the AIS::AisDecoder base class with most of the pure virtual
+ methods implemented as empty stubs.  This allows us to focus specifically on the raw decoding performance.
+ 
+ The 'AIS::processAisFile(...)' function is a utility function (see 'ais_decoder/ais_file.h') that reads
+ and decodes a file in blocks of the specified size.
+ 
+ 
+ 
+ 
+ 
+ 
+ */
+
+
+
+
 void pushSentence(const char *_pszSentence)
 {
     pushAisSentence(_pszSentence, strlen(_pszSentence), 0);

@@ -7,6 +7,51 @@
 using namespace AIS;
 
 
+/// private / detail namespace
+namespace
+{
+    /// calc header string from original line and extracted NMEA payload
+    StringRef getHeader(const StringRef &_strLine, const StringRef &_strNmea)
+    {
+        if (_strLine.size() > _strNmea.size())
+        {
+            return _strLine.sub(0, _strNmea.data() - _strLine.data());
+        }
+        else
+        {
+            return StringRef(_strLine.data(), 0);
+        }
+    }
+    
+    /// calc footer string from original line and extracted NMEA payload
+    StringRef getFooter(const StringRef &_strLine, const StringRef &_strNmea)
+    {
+        // NOTE: '_strLine' will end with <CR><LF> or <LF>
+        if (_strLine.size() > _strNmea.size())
+        {
+            StringRef strFooter(_strNmea.data() + _strNmea.size(),
+                                _strLine.size() - (_strNmea.data() + _strNmea.size() - _strLine.data()) - 1);
+            
+            // remove last '<CR>'
+            if (strFooter.empty() == false)
+            {
+                const char *pCh = strFooter.data() + strFooter.size() - 1;
+                if (*pCh == '\r')
+                {
+                    strFooter.m_uSize--;
+                }
+            }
+            
+            return strFooter;
+        }
+        else
+        {
+            return StringRef(_strLine.data(), 0);
+        }
+    }
+}
+
+
 PayloadBuffer::PayloadBuffer()
     :m_data{},
      m_iBitIndex(0)
@@ -207,6 +252,45 @@ uint8_t AIS::crc(const StringRef &_strNmea)
 
 }
 
+/*
+ Default implementation to scan through a sentence and extract NMEA string.
+ Look at 'onScanForNmea' user defined method on AisDecoder class.
+ 
+ This implementation will scan past META data that start and end with a '\'.  It will also stop at NMEA CRC.
+ 
+ */
+StringRef AIS::defaultScanForNmea(const StringRef &_strSentence)
+{
+    const char *pPayloadStart = _strSentence.data();
+    size_t uPayloadSize = _strSentence.size();
+    
+    // check for common META data block headers
+    const char *pCh = pPayloadStart;
+    if (*pCh == '\\')
+    {
+        // find META data block end
+        pCh = (const char*)memchr(pCh + 1, '\\', uPayloadSize - 1);
+        if (pCh != nullptr)
+        {
+            pPayloadStart = pCh + 1;
+            uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
+        }
+        else
+        {
+            uPayloadSize = 0;
+        }
+    }
+    
+    // find payload size (using crc '*' plus 2 chars for crc value)
+    pCh = (const char*)memchr(pPayloadStart, '*', uPayloadSize);
+    if (pCh != nullptr)
+    {
+        uPayloadSize = pCh + 3 - pPayloadStart;
+    }
+    
+    return StringRef(pPayloadStart, uPayloadSize);
+}
+
 
 
 
@@ -306,8 +390,8 @@ void AisDecoder::decodeType123(PayloadBuffer &_buffer, unsigned int _uMsgType, i
     auto posAccuracy = _buffer.getBoolValue();
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
-    auto cog = _buffer.getSignedValue(12);
-    auto heading = _buffer.getUnsignedValue(9);
+    auto cog = (int)_buffer.getUnsignedValue(12);
+    auto heading = (int)_buffer.getUnsignedValue(9);
     
     _buffer.getUnsignedValue(6);     // timestamp
     _buffer.getUnsignedValue(2);     // maneuver indicator
@@ -401,7 +485,7 @@ void AisDecoder::decodeType9(PayloadBuffer &_buffer, unsigned int _uMsgType, int
     auto posAccuracy = _buffer.getBoolValue();
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
-    auto cog = _buffer.getSignedValue(12);
+    auto cog = (int)_buffer.getUnsignedValue(12);
     
     _buffer.getUnsignedValue(6);     // timestamp
     _buffer.getUnsignedValue(8);     // reserved
@@ -430,8 +514,8 @@ void AisDecoder::decodeType18(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     auto posAccuracy = _buffer.getBoolValue();
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
-    auto cog = _buffer.getSignedValue(12);
-    auto heading = _buffer.getSignedValue(9);
+    auto cog = (int)_buffer.getUnsignedValue(12);
+    auto heading = (int)_buffer.getUnsignedValue(9);
     
     _buffer.getUnsignedValue(6);     // timestamp
     _buffer.getUnsignedValue(2);     // reserved
@@ -463,8 +547,8 @@ void AisDecoder::decodeType19(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     auto posAccuracy = _buffer.getBoolValue();
     auto posLon = _buffer.getSignedValue(28);
     auto posLat = _buffer.getSignedValue(27);
-    auto cog = _buffer.getSignedValue(12);
-    auto heading = _buffer.getSignedValue(9);
+    auto cog = (int)_buffer.getUnsignedValue(12);
+    auto heading = (int)_buffer.getUnsignedValue(9);
     _buffer.getUnsignedValue(6);                 // timestamp
     _buffer.getUnsignedValue(4);                 // reserved
     auto name = _buffer.getString(120);
@@ -604,7 +688,7 @@ void AisDecoder::decodeType27(PayloadBuffer &_buffer, unsigned int _uMsgType, in
     auto posLon = _buffer.getSignedValue(18);
     auto posLat = _buffer.getSignedValue(17);
     auto sog = _buffer.getUnsignedValue(6);
-    auto cog = _buffer.getSignedValue(9);
+    auto cog = (int)_buffer.getUnsignedValue(9);
     
     _buffer.getUnsignedValue(1);        // GNSS
     _buffer.getUnsignedValue(1);        // spare
@@ -678,25 +762,6 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
     }
 }
 
-/* called to find NMEA start (scan past any headers, META data, etc.; returns NMEA start index) */
-StringRef AisDecoder::onScanForPayload(const StringRef &_strSentence)
-{
-    const char *pCh = _strSentence.data();
-    if (*pCh == '\\')    // check for start of common META data block
-    {
-        pCh = (const char*)memchr(pCh+1, '\\', _strSentence.size()-1);
-    }
-    
-    if (pCh != nullptr)
-    {
-        return StringRef(pCh+1, _strSentence.size() - (pCh - _strSentence.data() + 1));
-    }
-    else
-    {
-        return _strSentence;
-    }
-}
-
 /* decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed) */
 size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset)
 {
@@ -708,11 +773,8 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         // provide raw data back to user
         onSentence(strLine);
         
-        // pull out NMEA sentence from line
-        // \todo do special processing on meta data to pull out message timestamps
-        auto strNmea = onScanForPayload(strLine);
-        auto strHeader = strLine.sub(0, strNmea.data() - strLine.data());
-        auto strFooter = strLine.sub(strHeader.size() + strNmea.size());
+        // pull out NMEA sentence and META data from line
+        auto strNmea = onScanForNmea(strLine);
         
         // check sentence CRC
         if (checkCrc(strNmea) == true)
@@ -744,7 +806,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                     try
                     {
                         decodeMobileAisMsg(m_words[5], iFillBits);
-                        onMessage(strNmea, strHeader, strFooter);
+                        onMessage(strNmea, getHeader(strLine, strNmea), getFooter(strLine, strNmea));
                     }
                     catch (std::exception &ex)
                     {
@@ -753,7 +815,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                     }
                 }
                 
-                // build up multi sentence payloads
+                // build up multi-sentence payloads
                 else if (iFragmentCount > 1)
                 {
                     int iMsgId = strtoi(m_words[3]);
@@ -776,7 +838,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                     // create multi-sentence object with first message
                     else if (iFragmentNum == 1)
                     {
-                        m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strHeader, strFooter);
+                        m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], getHeader(strLine, strNmea), getFooter(strLine, strNmea));
                     }
                     
                     // update multi-sentence object with more fragments

@@ -56,6 +56,10 @@ class AisQuickDecoder : public AIS::AisDecoder
     }
     
  protected:
+    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) override {
+        return AIS::defaultScanForNmea(_strSentence);
+    }
+    
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {
         AisMessage msg;
         

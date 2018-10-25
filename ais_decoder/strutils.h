@@ -155,7 +155,7 @@ namespace AIS
             }
         }
         
-        StringRef sub(size_t _i, size_t _n = npos) {
+        StringRef sub(size_t _i, size_t _n = npos) const {
             if (_i < m_uSize)
             {
                 return StringRef(m_psRef+_i, std::min(_n, m_uSize - _i));

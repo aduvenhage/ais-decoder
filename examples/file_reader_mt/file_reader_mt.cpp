@@ -1,4 +1,5 @@
 
+#include "../../ais_decoder/ais_decoder.h"
 #include "../../ais_decoder/ais_file.h"
 #include "../utils.h"
 
@@ -6,6 +7,31 @@
 #include <vector>
 #include <future>
 
+
+
+
+/*
+ 
+ 
+ 
+ 
+ 
+ 
+ This example demonstrates reading AIS messages from a file using multiple threads (one thread per file).
+ The approach uses std::async to fire off asyncronous decoding of files (very simple, but effective).
+ 
+ The AIS Decoder is created by inheriting from the AIS::AisDecoder base class with most of the pure virtual
+ methods implemented as empty stubs.  This allows us to focus specifically on the raw decoding performance.
+ 
+ The 'AIS::processAisFile(...)' function is a utility function (see 'ais_decoder/ais_file.h') that reads
+ and decodes a file in blocks of the specified size.
+
+ 
+ 
+ 
+ 
+ 
+ */
 
 
 
@@ -19,6 +45,8 @@ class AisDummyDecoder : public AIS::AisDecoder
     {}
     
  protected:
+    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) override {return _strSentence;}
+    
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
     
     virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
@@ -59,7 +87,6 @@ class AisDummyDecoder : public AIS::AisDecoder
 /// decoder callback that just prints progress/stats to console
 void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
 {
-    //printf("%d: bytes = %lu, messages = %lu, errors = %lu\n", _decoder.index(), (unsigned long)_uTotalBytes, (unsigned long)_decoder.getTotalMessageCount(), (unsigned long)_decoder.getDecodingErrorCount());
 }
 
 
@@ -95,8 +122,6 @@ void runAndWait()
     
     // NOTE: std::async is used to run test in its own thread
     // NOTE: puts the std::future values (result of async) in a list to wait on later
-    //vecThreads.push_back(std::async(std::launch::async, testAis, "nmea_data_sample.txt", 0));
-    //vecThreads.push_back(std::async(std::launch::async, testAis, "nmea-sample.txt", 1));
     vecThreads.push_back(std::async(std::launch::async, testAis, "20170210.log", 0));
     vecThreads.push_back(std::async(std::launch::async, testAis, "20170211.log", 1));
     vecThreads.push_back(std::async(std::launch::async, testAis, "20170212.log", 2));
