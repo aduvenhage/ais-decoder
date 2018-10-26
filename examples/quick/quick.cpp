@@ -54,11 +54,27 @@ int main()
     pushSentence("!AIVDM,1,1,,A,14eGrSPP00ncMJTO5C6aBwvP2D0?,0*7A,1452026224\n");
     pushSentence("\\c:1452026224\\!AIVDM,1,1,,A,15MrVH0000KH<:V:NtBLoqFP2H9:,0*2F\n");
     
+    // NOTE: popping many more messages than sentences pushed
     auto msg1 = popAisMessage();
     auto msg2 = popAisMessage();
     auto msg3 = popAisMessage();
     auto msg4 = popAisMessage();
-    
+    auto msg5 = popAisMessage();
+    auto msg6 = popAisMessage();
+    auto msg7 = popAisMessage();
+    auto msg8 = popAisMessage();
+    auto msg9 = popAisMessage();
+    auto msg10 = popAisMessage();
+    auto msg11 = popAisMessage();
+    auto msg12 = popAisMessage();
+    auto msg13 = popAisMessage();
+    auto msg14 = popAisMessage();
+    auto msg15 = popAisMessage();
+    auto msg16 = popAisMessage();
+    auto msg17 = popAisMessage();
+    auto msg18 = popAisMessage();
+    auto msg19 = popAisMessage();
+
     return 0;
 }
 
