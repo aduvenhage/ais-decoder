@@ -55,6 +55,40 @@ class AisQuickDecoder : public AIS::AisDecoder
         AIS::processAisBuffer(*this, m_buffer);
     }
     
+ private:
+    /// extract timestamp from META info
+    uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) {
+        // try to get timestamp from header
+        // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
+        uint64_t uTimestamp = 0;
+        if (m_strHeader.size() > 0)
+        {
+            // seperate header into words
+            std::array<AIS::StringRef, 8> words;
+            size_t n = AIS::seperate(words, m_strHeader);
+            
+            // find timestamp
+            for (size_t i = 0; i < n; i++)
+            {
+                const auto &word = words[i];
+                if ( (word.empty() == false) &&
+                     (word[0] == 'c') )
+                {
+                    uTimestamp = (uint64_t)std::strtoull(word.data()+2, nullptr, 10);
+                }
+            }
+        }
+        
+        // try to get timestamp from footer
+        // NOTE: assumes footer first word as timestamp
+        if (m_strFooter.empty() == false)
+        {
+            uTimestamp = (uint64_t)std::strtoull(m_strFooter.data()+1, nullptr, 10);
+        }
+        
+        return uTimestamp;
+    }
+    
  protected:
     virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) override {
         return AIS::defaultScanForNmea(_strSentence);
@@ -75,6 +109,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["heading"] = std::to_string(_iHeading);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -96,6 +131,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["pos_lat"] = std::to_string(_iPosLat);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -125,6 +161,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["destination"] = _strDestination;
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -142,6 +179,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["altitude"] = std::to_string(_iAltitude);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -159,6 +197,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["heading"] = std::to_string(_iHeading);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -184,6 +223,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["to_starboard"] = std::to_string(_uToStarboard);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -205,6 +245,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["to_starboard"] = std::to_string(_uToStarboard);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -218,6 +259,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["name"] = _strName;
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -236,6 +278,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["to_starboard"] = std::to_string(_uToStarboard);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -253,6 +296,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["cog"] = std::to_string(_iCog);
         msg.m_fields["header"] = m_strHeader;
         msg.m_fields["footer"] = m_strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -262,13 +306,15 @@ class AisQuickDecoder : public AIS::AisDecoder
     virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
         AisMessage msg;
         
+        m_strHeader = _strHeader;
+        m_strFooter = _strFooter;
+        m_strTimestamp = std::to_string(getTimestamp(m_strHeader, m_strFooter));
+        
         msg.m_fields["msg"] = std::to_string(0);
         msg.m_fields["payload"] = _strMessage;
         msg.m_fields["header"] = _strHeader;
         msg.m_fields["footer"] = _strFooter;
-        
-        m_strHeader = _strHeader;
-        m_strFooter = _strFooter;
+        msg.m_fields["timestamp"] = m_strTimestamp;
 
         m_messages.push(std::move(msg));
     }
@@ -290,6 +336,7 @@ class AisQuickDecoder : public AIS::AisDecoder
     AIS::FileBuffer             m_buffer;           ///< buffer used internally to decode chunks of data
     AIS::StringRef              m_strHeader;        ///< stores last header reference from 'onMessage(...)'
     AIS::StringRef              m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
+    std::string                 m_strTimestamp;     ///< stores last META timestamp (decoded from header ot footer)
 };
 
 

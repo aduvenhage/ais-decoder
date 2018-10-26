@@ -254,7 +254,7 @@ namespace AIS
             const char* next =  (const char*)memchr(pCh, ',', pChEnd - pCh);
             if (next == nullptr || next > pChEnd) {
                 // no comma found, assume we are in the last word
-                next = pChEnd + 1;
+                next = pChEnd;
             }
             
             _output[uWordCount].assign(pCh, next - pCh);

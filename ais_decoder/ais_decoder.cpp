@@ -253,7 +253,24 @@ StringRef AIS::getHeader(const StringRef &_strLine, const StringRef &_strNmea)
 {
     if (_strLine.size() > _strNmea.size())
     {
-        return _strLine.sub(0, _strNmea.data() - _strLine.data());
+        StringRef pHeader = _strLine.sub(0, _strNmea.data() - _strLine.data());
+        
+        // remove last '\'
+        if ( (pHeader.empty() == false) &&
+             (pHeader[pHeader.size() - 1] == '\\') )
+        {
+            pHeader.m_uSize--;
+        }
+        
+        // remove first '\\'
+        if ( (pHeader.empty() == false) &&
+             (pHeader[0] == '\\') )
+        {
+            pHeader.m_psRef++;
+            pHeader.m_uSize--;
+        }
+
+        return pHeader;
     }
     else
     {
@@ -272,15 +289,20 @@ StringRef AIS::getFooter(const StringRef &_strLine, const StringRef &_strNmea)
                             _strLine.size() - (_strNmea.data() + _strNmea.size() - _strLine.data()) - 1);
         
         // remove last '<CR>'
-        if (strFooter.empty() == false)
+        if ( (strFooter.empty() == false) &&
+             (strFooter[strFooter.size() - 1] == '\r') )
         {
-            const char *pCh = strFooter.data() + strFooter.size() - 1;
-            if (*pCh == '\r')
-            {
-                strFooter.m_uSize--;
-            }
+            strFooter.m_uSize--;
         }
         
+        // remove first ','
+        if ( (strFooter.empty() == false) &&
+             (strFooter[0] == ',') )
+        {
+            strFooter.m_psRef++;
+            strFooter.m_uSize--;
+        }
+
         return strFooter;
     }
     else
