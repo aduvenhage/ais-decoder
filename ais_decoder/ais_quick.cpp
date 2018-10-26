@@ -73,6 +73,8 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["pos_lat"] = std::to_string(_iPosLat);
         msg.m_fields["cog"] = std::to_string(_iCog);
         msg.m_fields["heading"] = std::to_string(_iHeading);
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
 
         m_messages.push(std::move(msg));
     }
@@ -92,6 +94,8 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["pos_accuracy"] = std::to_string(_bPosAccuracy);
         msg.m_fields["pos_lon"] = std::to_string(_iPosLon);
         msg.m_fields["pos_lat"] = std::to_string(_iPosLat);
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
 
         m_messages.push(std::move(msg));
     }
@@ -119,6 +123,8 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["eta_minute"] = std::to_string(_uEtaMinute);
         msg.m_fields["draught"] = std::to_string(_uDraught);
         msg.m_fields["destination"] = _strDestination;
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
 
         m_messages.push(std::move(msg));
     }
@@ -134,7 +140,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["pos_lat"] = std::to_string(_iPosLat);
         msg.m_fields["cog"] = std::to_string(_iCog);
         msg.m_fields["altitude"] = std::to_string(_iAltitude);
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -149,7 +157,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["pos_lat"] = std::to_string(_iPosLat);
         msg.m_fields["cog"] = std::to_string(_iCog);
         msg.m_fields["heading"] = std::to_string(_iHeading);
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -172,7 +182,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["to_stern"] = std::to_string(_uToStern);
         msg.m_fields["to_port"] = std::to_string(_uToPort);
         msg.m_fields["to_starboard"] = std::to_string(_uToStarboard);
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -191,7 +203,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["to_stern"] = std::to_string(_uToStern);
         msg.m_fields["to_port"] = std::to_string(_uToPort);
         msg.m_fields["to_starboard"] = std::to_string(_uToStarboard);
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -202,7 +216,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["part"] = "A";
         msg.m_fields["mmsi"] = AIS::mmsi_to_string((long)_uMmsi);
         msg.m_fields["name"] = _strName;
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -218,7 +234,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["to_stern"] = std::to_string(_uToStern);
         msg.m_fields["to_port"] = std::to_string(_uToPort);
         msg.m_fields["to_starboard"] = std::to_string(_uToStarboard);
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -233,7 +251,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["pos_lon"] = std::to_string(_iPosLon);
         msg.m_fields["pos_lat"] = std::to_string(_iPosLat);
         msg.m_fields["cog"] = std::to_string(_iCog);
-        
+        msg.m_fields["header"] = m_strHeader;
+        msg.m_fields["footer"] = m_strFooter;
+
         m_messages.push(std::move(msg));
     }
     
@@ -246,6 +266,9 @@ class AisQuickDecoder : public AIS::AisDecoder
         msg.m_fields["payload"] = _strMessage;
         msg.m_fields["header"] = _strHeader;
         msg.m_fields["footer"] = _strFooter;
+        
+        m_strHeader = _strHeader;
+        m_strFooter = _strFooter;
 
         m_messages.push(std::move(msg));
     }
@@ -263,8 +286,10 @@ class AisQuickDecoder : public AIS::AisDecoder
     }
     
  private:
-    std::queue<AisMessage>      m_messages;     ///< decoded messages -- quick decoder output
-    AIS::FileBuffer             m_buffer;       ///< buffer used internally to decode chunks of data
+    std::queue<AisMessage>      m_messages;         ///< decoded messages -- quick decoder output
+    AIS::FileBuffer             m_buffer;           ///< buffer used internally to decode chunks of data
+    AIS::StringRef              m_strHeader;        ///< stores last header reference from 'onMessage(...)'
+    AIS::StringRef              m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
 };
 
 

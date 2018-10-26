@@ -7,50 +7,6 @@
 using namespace AIS;
 
 
-/// private / detail namespace
-namespace
-{
-    /// calc header string from original line and extracted NMEA payload
-    StringRef getHeader(const StringRef &_strLine, const StringRef &_strNmea)
-    {
-        if (_strLine.size() > _strNmea.size())
-        {
-            return _strLine.sub(0, _strNmea.data() - _strLine.data());
-        }
-        else
-        {
-            return StringRef(_strLine.data(), 0);
-        }
-    }
-    
-    /// calc footer string from original line and extracted NMEA payload
-    StringRef getFooter(const StringRef &_strLine, const StringRef &_strNmea)
-    {
-        // NOTE: '_strLine' will end with <CR><LF> or <LF>
-        if (_strLine.size() > _strNmea.size())
-        {
-            StringRef strFooter(_strNmea.data() + _strNmea.size(),
-                                _strLine.size() - (_strNmea.data() + _strNmea.size() - _strLine.data()) - 1);
-            
-            // remove last '<CR>'
-            if (strFooter.empty() == false)
-            {
-                const char *pCh = strFooter.data() + strFooter.size() - 1;
-                if (*pCh == '\r')
-                {
-                    strFooter.m_uSize--;
-                }
-            }
-            
-            return strFooter;
-        }
-        else
-        {
-            return StringRef(_strLine.data(), 0);
-        }
-    }
-}
-
 
 PayloadBuffer::PayloadBuffer()
     :m_data{},
@@ -292,6 +248,48 @@ StringRef AIS::defaultScanForNmea(const StringRef &_strSentence)
 }
 
 
+/* calc header string from original line and extracted NMEA payload */
+StringRef AIS::getHeader(const StringRef &_strLine, const StringRef &_strNmea)
+{
+    if (_strLine.size() > _strNmea.size())
+    {
+        return _strLine.sub(0, _strNmea.data() - _strLine.data());
+    }
+    else
+    {
+        return StringRef(_strLine.data(), 0);
+    }
+}
+
+
+/* calc footer string from original line and extracted NMEA payload */
+StringRef AIS::getFooter(const StringRef &_strLine, const StringRef &_strNmea)
+{
+    // NOTE: '_strLine' will end with <CR><LF> or <LF>
+    if (_strLine.size() > _strNmea.size())
+    {
+        StringRef strFooter(_strNmea.data() + _strNmea.size(),
+                            _strLine.size() - (_strNmea.data() + _strNmea.size() - _strLine.data()) - 1);
+        
+        // remove last '<CR>'
+        if (strFooter.empty() == false)
+        {
+            const char *pCh = strFooter.data() + strFooter.size() - 1;
+            if (*pCh == '\r')
+            {
+                strFooter.m_uSize--;
+            }
+        }
+        
+        return strFooter;
+    }
+    else
+    {
+        return StringRef(_strLine.data(), 0);
+    }
+}
+
+
 
 
 MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFirstFragment, const StringRef &_strHeader, const StringRef &_strFooter)
@@ -349,7 +347,6 @@ bool MultiSentence::isComplete() const
 AisDecoder::AisDecoder(int _iIndex)
     :m_iIndex(_iIndex),
      m_multiSentences{},
-     m_words(MAX_MSG_WORDS),
      m_msgCounts{},
      m_uTotalMessages(0),
      m_uTotalBytes(0),
@@ -773,7 +770,8 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         // provide raw data back to user
         onSentence(strLine);
         
-        // pull out NMEA sentence and META data from line
+        // pull out NMEA sentence
+        // NOTE: META header and footer will be calculated from position and size of NMEA sentence within last line
         auto strNmea = onScanForNmea(strLine);
         
         // check sentence CRC
@@ -805,8 +803,9 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                 {
                     try
                     {
-                        decodeMobileAisMsg(m_words[5], iFillBits);
+                        // NOTE: the order of the callbacks is important (supply RAW/META info first then decode message)
                         onMessage(strNmea, getHeader(strLine, strNmea), getFooter(strLine, strNmea));
+                        decodeMobileAisMsg(m_words[5], iFillBits);
                     }
                     catch (std::exception &ex)
                     {
@@ -859,8 +858,10 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                                     // decode whole payload and reset
                                     try
                                     {
-                                        decodeMobileAisMsg(pMultiSentence->payload(), iFillBits);
+                                        // NOTE: the order of the callbacks is important (supply RAW/META info first then decode message)
+                                        // NOTE: only uses META info of first line for multiline messages
                                         onMessage(pMultiSentence->payload(), pMultiSentence->header(), pMultiSentence->footer());
+                                        decodeMobileAisMsg(pMultiSentence->payload(), iFillBits);
                                     }
                                     catch (std::exception &ex)
                                     {

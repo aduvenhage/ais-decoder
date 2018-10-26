@@ -5,7 +5,10 @@ The decoder consists of a base class that does the decoding, with pure virtual m
 
 The current 'onTypeXX(...)' message callback are unique for each message type (types 1,2,3,4,5,18,19 & 24 currently supported).  No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
 
-The decoder is designed to work off of raw data (processed in blocks) received from, for example, a file or a socket.  The raw data sentences (or lines) may be seperated by '[LF]' or '[CR][LF]'.  The individual sentences may also include meta data before or after the NMEA sentence and the meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  The way in which the NMEA sentence is identified and extracted from the data can also be extended by the user. The remaining data in each line is then assumed to be meta data.  
+The decoder is designed to work off of raw data (processed in blocks) received from, for example, a file or a socket.  The raw data sentences (or lines) may be seperated by '[LF]' or '[CR][LF]'.  The individual sentences may also include meta data before or after the NMEA sentence and the meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  The way in which the NMEA sentence is identified and extracted from the data can also be extended by the user. The remaining data in each line is then assumed to be META data.
+
+The 'onScanForNmea(...)' callback allows the decoder to support META data around the NMEA sentence.  The simplest implementation for this callback would just return the input parameter if no META data is expected.  The META data footer and header are calculated based on the start and the end of the NMEA string in each NMEA sentence.  For multiline messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').
+
 
 Some time was also spent on improving the speed of the NMEA string processing to see how quickly NMEA logs could be processed.  Currently the multi-threaded file reading examples (running a thread per file) achieve more than 3M NMEA messages per second, per thread.  When running on multiple logs concurrently (8 threads is a good number on modern hardware) 12M+ NMEA messages per second is possible.  During testing it was also found that most of the time was spent on the 6bit nibble packing and unpacking, not the file IO.
 
@@ -25,10 +28,10 @@ SWIG is used to provide Python bindings.
 - [x] Validate fragment count and fragment number values
 - [x] Investigate faster ascii de-armouring and bit packing techniques (thanks to Frans van den Bergh)
 - [x] Add python interface
+- [x] Support NMEA files/data with non-standard meta data, timestamp data, etc.
 
 - [ ] Validate talker IDs
 - [ ] Look at multiple threads/decoders working on the same file, for very large files
-- [ ] Support NMEA files/data with non-standard meta data, timestamp data, etc.
 - [ ] Add minimal networking to work with RTL-AIS (https://github.com/dgiardini/rtl-ais.git) and also to forward raw data
 
 ## Build

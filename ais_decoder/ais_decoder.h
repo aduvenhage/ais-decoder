@@ -75,6 +75,14 @@ namespace AIS
     StringRef defaultScanForNmea(const StringRef &_strSentence);
     
     
+    /// calc header string from original line and extracted NMEA payload
+    StringRef getHeader(const StringRef &_strLine, const StringRef &_strNmea);
+
+    
+    /// calc footer string from original line and extracted NMEA payload
+    StringRef getFooter(const StringRef &_strLine, const StringRef &_strNmea);
+
+    
     
     /**
      Multi-sentence message container.
@@ -120,13 +128,15 @@ namespace AIS
      
      Callback sequence:
         - onSentence(..) provides raw message fragments as they are received
+        - onMessage(...) provides message payload and meta info of the message being decoded
         - onTypeXX(...) provides message specific callbacks
-        - onMessage(...) provides message payload of the message just decoded
      
      Basic error checking, including CRC checks, are done and also reported.
      No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
      
-     The 'onScanForNmea(...)' callback allows the decoder to support META data around the NMEA sentence.  The simplest implementation for this callback would just return the input parameter if no META data is expected.
+     The 'onScanForNmea(...)' callback allows the decoder to support META data around the NMEA sentence.  The simplest implementation for this callback would just return the
+     input parameter if no META data is expected.  The META data footer and header are calculated based on the start and the end of the NMEA string in each NMEA sentence.  For
+     multiline messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').
      
      */
     class AisDecoder
@@ -247,7 +257,7 @@ namespace AIS
         int                                                                     m_iIndex;               ///< arbitrary id/index set by user for this decoder
         PayloadBuffer                                                           m_binaryBuffer;
         std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;
-        std::vector<StringRef>                                                  m_words;
+        std::array<StringRef, MAX_MSG_WORDS>                                    m_words;
         
         std::array<uint64_t, MAX_MSG_TYPES>                                     m_msgCounts;            ///< message counts per message type
         uint64_t                                                                m_uTotalMessages;

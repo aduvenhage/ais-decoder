@@ -137,6 +137,15 @@ namespace AIS
         {}
         
         const char *data() const {return m_psRef;}
+        
+        char operator [] (size_t _i) const {
+            if (_i < m_uSize) {
+                return m_psRef[_i];
+            }
+            else {
+                return 0;
+            }
+        }
 
         size_t size() const {return m_uSize;}
         bool empty() const {return m_uSize == 0;}
@@ -201,8 +210,8 @@ namespace AIS
     }
     
     /**
-         Appends first line of text from input, starting at _uOffset (works with "\n" and "\r\n").
-         Returns the number of bytes processed (EOL chars are not included in output, but counted).
+         Appends first line of text from input, starting at _uOffset (works with <LF> "\n" and <CR><LF> "\r\n").
+         Returns the number of bytes processed (output includes CR & LF chars).
      */
     inline size_t getLine(StringRef &_strOutput, const char *_pInput, size_t _uInputSize, size_t _uOffset)
     {
@@ -216,7 +225,7 @@ namespace AIS
         if (next == nullptr || next >= sentinel) {
             return 0;
         } else {
-            // \note getLine() output includes CR & LF chars
+            // \note getLine() output includes <CR> and <LF> chars
             int nb = next - pData + 1;
             _strOutput.m_psRef = pData;
             _strOutput.m_uSize = nb;
@@ -228,9 +237,12 @@ namespace AIS
     }
     
  	/**
-         Separate input string into words using commas
+         Separate input string into words using commas.
+         The output vector is not resized and this function will not return more words than the size of the output.
+         Returns the number of words added to output, starting at index 0.
      */
-    inline size_t seperate(std::vector<StringRef> &_output, const StringRef &_strInput)
+    template <typename output_t>
+    size_t seperate(output_t &_output, const StringRef &_strInput)
 	{
         const char *pCh = _strInput.data();
         const char *pChEnd = pCh + _strInput.size();

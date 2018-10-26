@@ -2,6 +2,7 @@
 #include "../../ais_decoder/ais_decoder.h"
 #include "../../ais_decoder/ais_file.h"
 #include "../../ais_decoder/ais_utils.h"
+#include "../../ais_decoder/strutils.h"
 #include "../utils.h"
 
 #include <string>
@@ -37,17 +38,29 @@
 /**
     Decodes type 1, 2, 3 and writes info to a file
  
-    'onType123(...)' writes the message info to the CSV file.
-    'onScanForNmea(...)' extract NMEA sentences from the file lines.
-    'onMessage(...)' interprets the META data.
- 
+     Callbacks are called in the following order:
+     - onScanForNmea(...): extract NMEA sentences from the file lines
+     - onSentence(...): used to reset message number tracking logic
+     - onMessage(...): temporarily stores META info for all messages
+     - onType123(...): outputs message and META to CSV
  */
 class AisCsvDecoder : public AIS::AisDecoder
 {
  public:
     AisCsvDecoder(const std::string &_strCsvPath)
         :m_fout(_strCsvPath)
-    {}
+    {
+        m_fout << "type" << ", "
+               << "mmsi" << ", "
+               << "timestamp" << ", "
+               << "Lat" << ", "
+               << "Lon" << ", "
+               << "Sog" << ", "
+               << "Cog" << ", "
+               << "NavStatus" << ", ["
+               << "Header" << "], ["
+               << "Footer" << "]\n";
+    }
     
  protected:
     
@@ -65,23 +78,48 @@ class AisCsvDecoder : public AIS::AisDecoder
      Decodes AIS message values and writes to CSV file.
      Uses some utility/helper functions from '../../ais_decoder/ais_utils.h'
      
-     Callback are called in the following order:
-     - onSentence(...): used to reset message number tracking logic
-     - onType123(...): outputs message to CSV
-     - onMessage(...): outputs META data to CSV if previous message was type 1, 2 or 3
-     
      */
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override
     {
-        m_iLastMsgType = _uMsgType;
+        // try to get timestamp from header
+        // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
+        uint64_t uTimestamp = 0;
+        if (m_strHeader.size() > 0)
+        {
+            // seperate header into words
+            std::array<AIS::StringRef, 8> words;
+            size_t n = AIS::seperate(words, m_strHeader);
+            
+            // find timestamp
+            for (size_t i = 0; i < n; i++)
+            {
+                const auto &word = words[i];
+                if ( (word.empty() == false) &&
+                     (word[0] == 'c') )
+                {
+                    uTimestamp = std::strtoull(word.data()+2, nullptr, 10);
+                }
+            }
+        }
         
+        // try to get timestamp from footer
+        // NOTE: assumes footer first word as timestamp
+        if (m_strFooter.empty() == false)
+        {
+            uTimestamp = std::strtoull(m_strFooter.data()+1, nullptr, 10);
+        }
+
+        // output to CSV
         m_fout << _uMsgType << ", "
                << AIS::mmsi_to_string(_uMmsi) << ", "
+               << uTimestamp << ", "
                << _iPosLat / 600000.0 << ", "
                << _iPosLon / 600000.0 << ", "
                << _uSog / 10.0 << ", "
                << _iCog / 10.0 << ", "
-               << AIS::getAisNavigationStatus(_uNavstatus) << ", ";
+               << AIS::getAisNavigationStatus(_uNavstatus) << ", ["
+               << (std::string)m_strHeader << "], ["
+               << (std::string)m_strFooter << "]\n";
     }
     
     virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
@@ -110,15 +148,13 @@ class AisCsvDecoder : public AIS::AisDecoder
     virtual void onType27(unsigned int _uMmsi, unsigned int _uNavstatus, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog) override {}
     
     virtual void onSentence(const AIS::StringRef &_strSentence) override {
-        // reset message type index
-        m_iLastMsgType = 0;
     }
     
     virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
-        if (m_iLastMsgType != 0)
-        {
-            m_fout << "[" << (std::string)_strHeader << "], [" << (std::string)_strFooter << "]\n";
-        }
+        // temprarily store META info
+        // NOTE: the string references point to the source data and may become invalid after decoder has run through source data
+        m_strHeader = _strHeader;
+        m_strFooter = _strFooter;
     }
     
     virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
@@ -129,8 +165,9 @@ class AisCsvDecoder : public AIS::AisDecoder
     }
     
  private:
-    std::ofstream       m_fout;
-    int                 m_iLastMsgType;            /// stores last message type decoded
+    std::ofstream       m_fout;             ///< CVS output file
+    AIS::StringRef      m_strHeader;        ///< stores last header reference from 'onMessage(...)'
+    AIS::StringRef      m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
 };
 
 
