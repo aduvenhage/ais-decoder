@@ -34,6 +34,34 @@
 
 
 
+/// Dummy Sentence Parser (ignores any META data)
+class AisDummySentenceParser     : public AIS::SentenceParser
+{
+ public:
+    /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload)
+    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) const override {
+        return _strSentence;
+    }
+    
+    /// calc header string from original line and extracted NMEA payload
+    virtual AIS::StringRef getHeader(const AIS::StringRef &_strLine, const AIS::StringRef &_strNmea) const override {
+        return AIS::StringRef();
+    }
+    
+    /// calc footer string from original line and extracted NMEA payload
+    virtual AIS::StringRef getFooter(const AIS::StringRef &_strLine, const AIS::StringRef &_strNmea) const override {
+        return AIS::StringRef();
+    }
+    
+    /// extracts the timestamp from the meta info
+    virtual uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) const override {
+        return 0;
+    }
+};
+
+
+
+
 /// Decoder implementation that does nothing -- i.e. just testing NMEA decoding performance
 class AisDummyDecoder : public AIS::AisDecoder
 {
@@ -42,8 +70,6 @@ class AisDummyDecoder : public AIS::AisDecoder
     {}
     
  protected:
-    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) override {return _strSentence;}
-    
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
     
     virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
@@ -107,7 +133,8 @@ void testAis(const std::string &_strLogPath)
     AisDummyDecoder decoder;
     
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
-    AIS::processAisFile(std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath, decoder, BLOCK_SIZE, progressCb);
+    AisDummySentenceParser parser;
+    AIS::processAisFile(std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath, decoder, parser, BLOCK_SIZE, progressCb);
     
     auto td = UTILS::CLOCK::getClockNow() - tsInit;
     double dTd = UTILS::CLOCK::getClockDurationS(td);

@@ -60,28 +60,8 @@ namespace AIS
     /// Convert payload to decimal (de-armour) and concatenate 6bit decimal values into payload buffer. Returns the number of bits used.
     int decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _iFillBits);
     
-    
     /// calc CRC
     uint8_t crc(const StringRef &_strLine);
-    
-    
-    /**
-     Default implementation to scan through a sentence and extract NMEA string.
-     Look at 'onScanForNmea' user defined method on AisDecoder class.
-     
-     This implementation will scan past META data that start and end with a '\'.  It will also stop at NMEA CRC.
-     
-     */
-    StringRef defaultScanForNmea(const StringRef &_strSentence);
-    
-    
-    /// calc header string from original line and extracted NMEA payload
-    StringRef getHeader(const StringRef &_strLine, const StringRef &_strNmea);
-
-    
-    /// calc footer string from original line and extracted NMEA payload
-    StringRef getFooter(const StringRef &_strLine, const StringRef &_strNmea);
-
     
     
     /**
@@ -117,6 +97,30 @@ namespace AIS
         StringRef               m_strPayload;
         std::vector<char>       m_vecStrData;       ///< data backing for string refs
     };
+    
+    
+    
+    /**
+     Sentence Parser base class.
+     This class can be extended to pull out NMEA string and META info from custom sentence formats.
+     
+     */
+    class SentenceParser
+    {
+     public:
+        /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload; may be overloaded for app specific meta data)
+        virtual StringRef onScanForNmea(const StringRef &_strSentence) const = 0;
+
+        /// calc header string from original line and extracted NMEA payload
+        virtual StringRef getHeader(const StringRef &_strLine, const StringRef &_strNmea) const = 0;
+        
+        /// calc footer string from original line and extracted NMEA payload
+        virtual StringRef getFooter(const StringRef &_strLine, const StringRef &_strNmea) const = 0;
+        
+        /// extracts the timestamp from the meta info (should return 0 if no timestamp found)
+        virtual uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) const = 0;
+    };
+    
     
     
     /**
@@ -157,7 +161,7 @@ namespace AIS
         int index() const {return m_iIndex;}
         
         /// decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed)
-        size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
+        size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset, const SentenceParser &_parser);
         
         /// returns the total number of messages processed
         uint64_t getTotalMessageCount() const {return m_uTotalMessages;}
@@ -176,9 +180,6 @@ namespace AIS
         
         // user defined callbacks
      protected:
-        /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload; may be overloaded for app specific meta data; look at 'defaultScanForNmea' function)
-        virtual StringRef onScanForNmea(const StringRef &_strSentence) = 0;
-        
         virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
         virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
                                bool _bPosAccuracy, int _iPosLon, int _iPosLat) = 0;

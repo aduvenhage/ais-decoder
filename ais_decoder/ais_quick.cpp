@@ -3,6 +3,7 @@
 #include "ais_decoder.h"
 #include "ais_file.h"
 #include "ais_utils.h"
+#include "default_sentence_parser.h"
 
 #include <queue>
 
@@ -49,51 +50,18 @@ class AisQuickDecoder : public AIS::AisDecoder
         return m_messages.size();
     }
 
+    /// decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed)
+    size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset) {
+        return AIS::AisDecoder::decodeMsg(_pNmeaBuffer, _uBufferSize, _uOffset, m_parser);
+    }
+
     /// decode all sentences and buffer trailing data internally until next call
     void decodeChunk(const char *_pNmeaBuffer, size_t _uBufferSize) {
         m_buffer.append(_pNmeaBuffer, _uBufferSize);
-        AIS::processAisBuffer(*this, m_buffer);
-    }
-    
- private:
-    /// extract timestamp from META info
-    uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) {
-        // try to get timestamp from header
-        // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
-        uint64_t uTimestamp = 0;
-        if (m_strHeader.size() > 0)
-        {
-            // seperate header into words
-            std::array<AIS::StringRef, 8> words;
-            size_t n = AIS::seperate(words, m_strHeader);
-            
-            // find timestamp
-            for (size_t i = 0; i < n; i++)
-            {
-                const auto &word = words[i];
-                if ( (word.empty() == false) &&
-                     (word[0] == 'c') )
-                {
-                    uTimestamp = (uint64_t)std::strtoull(word.data()+2, nullptr, 10);
-                }
-            }
-        }
-        
-        // try to get timestamp from footer
-        // NOTE: assumes footer first word as timestamp
-        if (m_strFooter.empty() == false)
-        {
-            uTimestamp = (uint64_t)std::strtoull(m_strFooter.data()+1, nullptr, 10);
-        }
-        
-        return uTimestamp;
+        AIS::processAisBuffer(*this, m_parser, m_buffer);
     }
     
  protected:
-    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) override {
-        return AIS::defaultScanForNmea(_strSentence);
-    }
-    
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {
         AisMessage msg;
         
@@ -308,7 +276,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         
         m_strHeader = _strHeader;
         m_strFooter = _strFooter;
-        m_strTimestamp = std::to_string(getTimestamp(m_strHeader, m_strFooter));
+        m_strTimestamp = std::to_string(m_parser.getTimestamp(m_strHeader, m_strFooter));
         
         msg.m_fields["msg"] = std::to_string(0);
         msg.m_fields["payload"] = _strMessage;
@@ -332,6 +300,7 @@ class AisQuickDecoder : public AIS::AisDecoder
     }
     
  private:
+    AIS::DefaultSentenceParser  m_parser;
     std::queue<AisMessage>      m_messages;         ///< decoded messages -- quick decoder output
     AIS::FileBuffer             m_buffer;           ///< buffer used internally to decode chunks of data
     AIS::StringRef              m_strHeader;        ///< stores last header reference from 'onMessage(...)'

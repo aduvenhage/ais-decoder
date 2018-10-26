@@ -5,6 +5,7 @@ SET(INCL_SRC
     ais_utils.h
     ais_file.h
     ais_quick.h
+    default_sentence_parser.h
     strutils.h
 )
 
@@ -14,6 +15,7 @@ SET(LIB_SRC
     ais_utils.cpp
     ais_file.cpp
     ais_quick.cpp
+    default_sentence_parser.cpp
 )
 
 set(targetname "ais_decoder")

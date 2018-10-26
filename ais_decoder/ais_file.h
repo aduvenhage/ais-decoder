@@ -64,12 +64,12 @@ namespace AIS
     
 
     /// Process as much of the data in buffer as possible. Data used is erased from buffer and data not processed is left at front of buffer.
-    inline void processAisBuffer(AIS::AisDecoder &_decoder, FileBuffer &_buffer)
+    inline void processAisBuffer(AIS::AisDecoder &_decoder, const SentenceParser &_parser, FileBuffer &_buffer)
     {
         size_t uOffset = 0;
         for (;;)
         {
-            size_t n = _decoder.decodeMsg(_buffer.data(), _buffer.size(), uOffset);
+            size_t n = _decoder.decodeMsg(_buffer.data(), _buffer.size(), uOffset, _parser);
             if (n > 0)
             {
                 uOffset += n;
@@ -93,7 +93,7 @@ namespace AIS
      
      */
     template <typename progress_func_t>
-    void processAisFile(const std::string &_strLogPath, AIS::AisDecoder &_decoder, size_t _uBlockSize, progress_func_t &_progressCb)
+    void processAisFile(const std::string &_strLogPath, AIS::AisDecoder &_decoder, const SentenceParser &_parser, size_t _uBlockSize, progress_func_t &_progressCb)
     {
         FileBuffer buffer(_uBlockSize + 512);
         
@@ -114,7 +114,7 @@ namespace AIS
                     buffer.resize(uOffset + nb);
                     
                     // process as much of the buffer as possible
-                    processAisBuffer(_decoder, buffer);
+                    processAisBuffer(_decoder, _parser, buffer);
                     
                     // report progress
                     _progressCb(uTotalBytes, _decoder);

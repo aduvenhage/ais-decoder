@@ -3,6 +3,7 @@
 #include "../../ais_decoder/ais_file.h"
 #include "../../ais_decoder/ais_utils.h"
 #include "../../ais_decoder/strutils.h"
+#include "../../ais_decoder/default_sentence_parser.h"
 #include "../utils.h"
 
 #include <string>
@@ -35,6 +36,7 @@
 
 
 
+
 /**
     Decodes type 1, 2, 3 and writes info to a file
  
@@ -47,8 +49,9 @@
 class AisCsvDecoder : public AIS::AisDecoder
 {
  public:
-    AisCsvDecoder(const std::string &_strCsvPath)
-        :m_fout(_strCsvPath)
+    AisCsvDecoder(const std::string &_strCsvPath, const AIS::SentenceParser &_parser)
+        :m_fout(_strCsvPath),
+         m_parser(_parser)
     {
         m_fout << "type" << ", "
                << "mmsi" << ", "
@@ -62,53 +65,7 @@ class AisCsvDecoder : public AIS::AisDecoder
                << "Footer" << "]\n";
     }
     
-    
- private:
-    /// extract timestamp from META info
-    uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) {
-        // try to get timestamp from header
-        // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
-        uint64_t uTimestamp = 0;
-        if (m_strHeader.size() > 0)
-        {
-            // seperate header into words
-            std::array<AIS::StringRef, 8> words;
-            size_t n = AIS::seperate(words, m_strHeader);
-            
-            // find timestamp
-            for (size_t i = 0; i < n; i++)
-            {
-                const auto &word = words[i];
-                if ( (word.empty() == false) &&
-                    (word[0] == 'c') )
-                {
-                    uTimestamp = (uint64_t)std::strtoull(word.data()+2, nullptr, 10);
-                }
-            }
-        }
-        
-        // try to get timestamp from footer
-        // NOTE: assumes footer first word as timestamp
-        if (m_strFooter.empty() == false)
-        {
-            uTimestamp = (uint64_t)std::strtoull(m_strFooter.data()+1, nullptr, 10);
-        }
-        
-        return uTimestamp;
-    }
-
  protected:
-    
-    /**
-     This method extracts the NMEA sentence from the data/line.
-     The data before and after the NMEA sentence is taken as the META data header and footer.
-     */
-    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) override
-    {
-        // see '../../ais_decoder/ais_decoder.cpp' for example implementation 'defaultScanForNmea(...)'
-        return AIS::defaultScanForNmea(_strSentence);
-    }
-    
     /**
      Decodes AIS message values and writes to CSV file.
      Uses some utility/helper functions from '../../ais_decoder/ais_utils.h'
@@ -117,7 +74,7 @@ class AisCsvDecoder : public AIS::AisDecoder
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override
     {
         // decode META info to get timestamp
-        uint64_t uTimestamp = getTimestamp(m_strHeader, m_strFooter);
+        uint64_t uTimestamp = m_parser.getTimestamp(m_strHeader, m_strFooter);
         
         // output to CSV
         m_fout << _uMsgType << ", "
@@ -175,9 +132,10 @@ class AisCsvDecoder : public AIS::AisDecoder
     }
     
  private:
-    std::ofstream       m_fout;             ///< CVS output file
-    AIS::StringRef      m_strHeader;        ///< stores last header reference from 'onMessage(...)'
-    AIS::StringRef      m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
+    std::ofstream               m_fout;             ///< CVS output file
+    AIS::StringRef              m_strHeader;        ///< stores last header reference from 'onMessage(...)'
+    AIS::StringRef              m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
+    const AIS::SentenceParser   &m_parser;          ///< sentence parser being used
 };
 
 
@@ -201,10 +159,11 @@ void createCsv(const std::string &_strLogPath)
     auto tsInit = UTILS::CLOCK::getClockNow();
 
     // create decoder instance
-    AisCsvDecoder decoder(strInputFilePath + ".csv");
+    AIS::DefaultSentenceParser parser;
+    AisCsvDecoder decoder(strInputFilePath + ".csv", parser);
     
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
-    AIS::processAisFile(strInputFilePath, decoder, BLOCK_SIZE, progressCb);
+    AIS::processAisFile(strInputFilePath, decoder, parser, BLOCK_SIZE, progressCb);
     
     auto td = UTILS::CLOCK::getClockNow() - tsInit;
     double dTd = UTILS::CLOCK::getClockDurationS(td);
