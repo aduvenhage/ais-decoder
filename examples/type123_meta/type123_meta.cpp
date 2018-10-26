@@ -62,6 +62,41 @@ class AisCsvDecoder : public AIS::AisDecoder
                << "Footer" << "]\n";
     }
     
+    
+ private:
+    /// extract timestamp from META info
+    uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) {
+        // try to get timestamp from header
+        // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
+        uint64_t uTimestamp = 0;
+        if (m_strHeader.size() > 0)
+        {
+            // seperate header into words
+            std::array<AIS::StringRef, 8> words;
+            size_t n = AIS::seperate(words, m_strHeader);
+            
+            // find timestamp
+            for (size_t i = 0; i < n; i++)
+            {
+                const auto &word = words[i];
+                if ( (word.empty() == false) &&
+                    (word[0] == 'c') )
+                {
+                    uTimestamp = (uint64_t)std::strtoull(word.data()+2, nullptr, 10);
+                }
+            }
+        }
+        
+        // try to get timestamp from footer
+        // NOTE: assumes footer first word as timestamp
+        if (m_strFooter.empty() == false)
+        {
+            uTimestamp = (uint64_t)std::strtoull(m_strFooter.data()+1, nullptr, 10);
+        }
+        
+        return uTimestamp;
+    }
+
  protected:
     
     /**
@@ -81,34 +116,9 @@ class AisCsvDecoder : public AIS::AisDecoder
      */
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override
     {
-        // try to get timestamp from header
-        // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
-        uint64_t uTimestamp = 0;
-        if (m_strHeader.size() > 0)
-        {
-            // seperate header into words
-            std::array<AIS::StringRef, 8> words;
-            size_t n = AIS::seperate(words, m_strHeader);
-            
-            // find timestamp
-            for (size_t i = 0; i < n; i++)
-            {
-                const auto &word = words[i];
-                if ( (word.empty() == false) &&
-                     (word[0] == 'c') )
-                {
-                    uTimestamp = std::strtoull(word.data()+2, nullptr, 10);
-                }
-            }
-        }
+        // decode META info to get timestamp
+        uint64_t uTimestamp = getTimestamp(m_strHeader, m_strFooter);
         
-        // try to get timestamp from footer
-        // NOTE: assumes footer first word as timestamp
-        if (m_strFooter.empty() == false)
-        {
-            uTimestamp = std::strtoull(m_strFooter.data()+1, nullptr, 10);
-        }
-
         // output to CSV
         m_fout << _uMsgType << ", "
                << AIS::mmsi_to_string(_uMmsi) << ", "
