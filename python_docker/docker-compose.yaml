@@ -1,0 +1,15 @@
+version: '2.1'
+
+services:
+    ais_tester:
+        image: ais_decoder
+        build:
+            context: .
+            dockerfile: ./ais_testing/Dockerfile
+        volumes:
+            - /etc/localtime:/etc/localtime:ro
+            - ./ais_testing/code:/usr/local/code
+            - ./ais_testing/data:/usr/local/data
+            - ./ais_testing/logs:/usr/local/logs
+        command: python3 /usr/local/code/main.py -ll DEBUG -c /usr/local/code/config.cfg
+        #restart: always
