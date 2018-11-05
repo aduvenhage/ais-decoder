@@ -117,7 +117,8 @@ class AisCsvDecoder : public AIS::AisDecoder
     virtual void onSentence(const AIS::StringRef &_strSentence) override {
     }
     
-    virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
+    virtual void onMessage(const AIS::StringRef &_strMessage,
+                           const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
         // temprarily store META info
         // NOTE: the string references point to the source data and may become invalid after decoder has run through source data
         m_strHeader = _strHeader;

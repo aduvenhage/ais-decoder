@@ -72,16 +72,16 @@ namespace AIS
     {
      public:
         /// add first fragment
-        MultiSentence(int _iFragmentCount, const StringRef &_strFirstFragment, const StringRef &_strHeader, const StringRef &_strFooter);
+        MultiSentence(int _iFragmentCount, const StringRef &_strFragment, const StringRef &_strLine, const StringRef &_strHeader, const StringRef &_strFooter);
         
         /// add more fragments (returns false if there is an fragment indexing error)
-        bool addFragment(int _iFragmentNum, const StringRef &_strFragment);
+        bool addFragment(int _iFragmentNum, const StringRef &_strFragment, const StringRef &_strLine);
         
         /// returns true if all fragments have been received
         bool isComplete() const;
         
-        /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
-        const StringRef &payload() const {return m_strPayload;}
+        /// returns full payload
+        void payload(Buffer &_payload) const;
         
         /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
         const StringRef &header() const {return m_strHeader;}
@@ -89,13 +89,21 @@ namespace AIS
         /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
         const StringRef &footer() const {return m_strFooter;}
         
+        /// returns original sentences referenced my this multi-line sentence
+        const std::vector<StringRef> &sentences() const {return m_vecLines;}
+        
+        /// backup string data by allocating own internal buffer, copying data and referencing from that
+        void backupData();
+        
      protected:
         int                     m_iFragmentCount;
         int                     m_iFragmentNum;
-        StringRef               m_strHeader;        ///< footer
+        StringRef               m_strHeader;     ///< footer
         StringRef               m_strFooter;
-        StringRef               m_strPayload;
-        std::vector<char>       m_vecStrData;       ///< data backing for string refs
+        std::vector<StringRef>  m_vecPayload;    ///< all multi-line fragments
+        std::vector<StringRef>  m_vecLines;      ///< original lines
+        size_t                  m_uPayloadSize;  ///< accumulated payload size
+        Buffer                  m_backup;        ///< internal buffer used as backup to string data
     };
     
     
@@ -126,6 +134,10 @@ namespace AIS
     /**
      AIS decoder base class.
      Implemented according to 'http://catb.org/gpsd/AIVDM.html'.
+     
+     To use the decoder, call 'decodeMsg(...)' with some data until it returns 0. 'decodeMsg(...)' returns the number of bytes processed and offset should be set on each call to point to the new
+     location in the buffer.
+     \note: 'decodeMsg(...)' has to be called until it returns 0, to ensure that any buffered multi-line strings are backed up properly.
      
      A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods as well as error handling methods.
      Some user onTypeXX(...) methods are attached to multiple message types, for example: 123 (types 1, 2 & 3) and 411 (types 4 & 11), in which case the message type is the first parameter.
@@ -160,7 +172,10 @@ namespace AIS
         /// returns the user defined index
         int index() const {return m_iIndex;}
         
-        /// decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed)
+        /**
+            Decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed, or 0 when no more messages can be decoded).
+            Has to be called until it returns 0, to ensure that any buffered multi-line strings are backed up properly.
+         */
         size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset, const SentenceParser &_parser);
         
         /// returns the total number of messages processed
@@ -177,7 +192,23 @@ namespace AIS
         
         /// returns the total number of decoding errors
         uint64_t getDecodingErrorCount() const {return m_uDecodingErrors;}
+     
         
+        // access to message info
+     protected:
+        /// returns the META header of the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
+        const StringRef &header() const {return m_strHeader;}
+        
+        /// returns the META footer of the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
+        const StringRef &footer() const {return m_strFooter;}
+        
+        /// returns the NMEA string of the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
+        const StringRef &payload() const {return m_strPayload;}
+        
+        /// returns all the sentences that contributed to the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
+        const std::vector<StringRef> &sentences() const {return m_vecSentences;}
+        
+
         // user defined callbacks
      protected:
         virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) = 0;
@@ -208,10 +239,10 @@ namespace AIS
         /// called on every sentence (raw data) received (includes all characters, including NL, CR, etc.; called before any validation or CRCs checks are performed)
         virtual void onSentence(const StringRef &_strSentence) = 0;
         
-        /// called on every full message (concatenated fragments -- payload), after 'onTypeXX(...)'
+        /// called on every full message, before 'onTypeXX(...)'
         virtual void onMessage(const StringRef &_strPayload, const StringRef &_strHeader, const StringRef &_strFooter) = 0;
         
-        /// called when message type is not supported (i.e. 'onTypeXX(...)' not implemented), and 'onMessage(...)' is still called
+        /// called when message type is not supported (i.e. 'onTypeXX(...)' not implemented)
         virtual void onNotDecoded(const StringRef &_strPayload, int _iMsgType) = 0;
         
         /// called when any decoding error ocurred
@@ -256,17 +287,24 @@ namespace AIS
 
     private:
         int                                                                     m_iIndex;               ///< arbitrary id/index set by user for this decoder
-        PayloadBuffer                                                           m_binaryBuffer;
-        std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;
-        std::array<StringRef, MAX_MSG_WORDS>                                    m_words;
         
+        PayloadBuffer                                                           m_binaryBuffer;         ///< used internally to decode NMEA payloads
+        std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;       ///< used internally to buffer multi-line message sentences
+        std::array<StringRef, MAX_MSG_WORDS>                                    m_words;                ///< used internally to buffer NMEA words
+        Buffer                                                                  m_fragmentBuffer;       ///< used internally to join multiline fragments before decoding
+        
+        std::vector<StringRef>                                                  m_vecSentences;         ///< all NMEA/raw sentences for message - stored for each message just before user callbacks
+        StringRef                                                               m_strHeader;            ///< extracted META header
+        StringRef                                                               m_strFooter;            ///< extracted META header
+        StringRef                                                               m_strPayload;           ///< extracted full payload (concatenated fragments; ascii)
+
         std::array<uint64_t, MAX_MSG_TYPES>                                     m_msgCounts;            ///< message counts per message type
         uint64_t                                                                m_uTotalMessages;
         uint64_t                                                                m_uTotalBytes;
         uint64_t                                                                m_uCrcErrors;           ///< CRC check error count
         uint64_t                                                                m_uDecodingErrors;      ///< decoding error count (includes CRC errors)
         
-        std::array<pfnMsgCallback, 100>                                         m_vecMsgCallbacks;
+        std::array<pfnMsgCallback, 100>                                         m_vecMsgCallbacks;      ///< message decoding functions mapped to message IDs
     };
     
     

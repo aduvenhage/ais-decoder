@@ -180,6 +180,63 @@ namespace AIS
     };
 
     
+    /**
+     Lightweight buffer for processing data chunks.
+     Internal buffer is allowed to grow, but not shrink.
+     This avoids allocation and resize init overheads, if the buffer is reused for multiple chunks.
+     */
+    struct Buffer
+    {
+        Buffer()
+            :m_uSize(0)
+        {}
+        
+        Buffer(size_t _uReservedSize)
+            :m_data(_uReservedSize, 0),
+             m_uSize(0)
+        {}
+        
+        const char *data() const {return m_data.data();}
+        char *data() {return (char*)m_data.data();}
+        
+        size_t size() const {return m_uSize;}
+        
+        void resize(size_t _uSize) {
+            m_uSize = _uSize;
+            if (m_uSize > m_data.size()) {
+                m_data.resize(m_uSize);
+            }
+        }
+        
+        void clear() {
+            m_uSize = 0;
+        }
+        
+        void append(const char *_pData, size_t _uSize) {
+            if ( (_uSize > 0) &&
+                 (_pData != nullptr) )
+            {
+                size_t uOffset = size();
+                resize(uOffset + _uSize);
+                memcpy(data() + uOffset, _pData, _uSize);
+            }
+        }
+        
+        void pop_front(size_t _uSize) {
+            if (_uSize < m_uSize) {
+                std::memmove((char*)m_data.data(), (char*)m_data.data() + _uSize, m_uSize - _uSize);
+                m_uSize -= _uSize;
+            }
+            else {
+                m_uSize = 0;
+            }
+        }
+        
+        std::vector<char>       m_data;
+        size_t                  m_uSize;
+    };
+    
+    
     /// find the last of '_ch' in _str
     inline size_t findLastOf(const StringRef &_str, char _ch)
     {

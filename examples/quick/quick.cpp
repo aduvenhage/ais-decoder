@@ -42,7 +42,7 @@
 
 void pushSentence(const char *_pszSentence)
 {
-    pushAisSentence(_pszSentence, strlen(_pszSentence), 0);
+    pushAisSentence(_pszSentence, strlen(_pszSentence));
 }
 
 int main()

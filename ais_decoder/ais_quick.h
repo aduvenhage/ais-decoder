@@ -8,8 +8,13 @@
 
 
 
-/// Push new data onto the decoder. Scans for a complete line and only consumes one line at a time. Returns the number of bytes processed.
-int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset);
+/**
+ Push new data onto the decoder.
+ Scans for a complete line and only consumes one line at a time.
+ Returns the number of bytes processed.
+ Slower than processing a whole chunk, see 'pushAisChunk(...)'.
+ */
+int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize);
 
 /// Push new data onto the decoder. Scans for all sentences in data and buffers remaining data until the next call. Returns the number of bytes processed.
 void pushAisChunk(const char *_pNmeaBuffer, size_t _uBufferSize);

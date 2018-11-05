@@ -12,74 +12,26 @@
 
 namespace AIS
 {
-    
-    /**
-     Lightweight buffer for processing file chunks.
-     Internal buffer is allowed to grow, but not shrink.
-     This avoids allocation and resize init overheads, if the buffer is reused for multiple chunks.
-     */
-    struct FileBuffer
-    {
-        FileBuffer()
-            :m_data(512, 0),
-             m_uSize(0)
-        {}
-        
-        FileBuffer(size_t _uReservedSize)
-            :m_data(_uReservedSize, 0),
-             m_uSize(0)
-        {}
-        
-        const char *data() const {return m_data.data();}
-        char *data() {return (char*)m_data.data();}
-        
-        size_t size() const {return m_uSize;}
-        
-        void resize(size_t _uSize) {
-            m_uSize = _uSize;
-            if (m_uSize > m_data.size()) {
-                m_data.resize(m_uSize);
-            }
-        }
-        
-        void append(const char *_pData, size_t _uSize) {
-            size_t uOffset = size();
-            resize(uOffset + _uSize);
-            memcpy(data() + uOffset, _pData, _uSize);
-        }
-        
-        void pop_front(size_t _uSize) {
-            if (_uSize < m_uSize) {
-                std::memmove((char*)m_data.data(), (char*)m_data.data() + _uSize, m_uSize - _uSize);
-                m_uSize -= _uSize;
-            }
-            else {
-                m_uSize = 0;
-            }
-        }
-        
-        std::vector<char>       m_data;
-        size_t                  m_uSize;
-    };
-    
 
     /// Process as much of the data in buffer as possible. Data used is erased from buffer and data not processed is left at front of buffer.
-    inline void processAisBuffer(AIS::AisDecoder &_decoder, const SentenceParser &_parser, FileBuffer &_buffer)
+    inline void processAisBuffer(AIS::AisDecoder &_decoder, const SentenceParser &_parser, Buffer &_buffer)
     {
         size_t uOffset = 0;
         for (;;)
         {
+            // NOTE: have to keep on calling until return is 0, to force multi-line sentence backup
             size_t n = _decoder.decodeMsg(_buffer.data(), _buffer.size(), uOffset, _parser);
             if (n > 0)
             {
                 uOffset += n;
             }
-            else
+            else    // n == 0
             {
                 break;
             }
         }
         
+        // erase all data that was processed (some unprocessed data may remain in the buffer)
         _buffer.pop_front(uOffset);
     }
     
@@ -95,7 +47,7 @@ namespace AIS
     template <typename progress_func_t>
     void processAisFile(const std::string &_strLogPath, AIS::AisDecoder &_decoder, const SentenceParser &_parser, size_t _uBlockSize, progress_func_t &_progressCb)
     {
-        FileBuffer buffer(_uBlockSize + 512);
+        Buffer buffer(_uBlockSize + 512);
         
         // open file
         FILE *pFileIn = fopen(_strLogPath.c_str(), "rb");

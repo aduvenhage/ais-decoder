@@ -50,9 +50,14 @@ class AisQuickDecoder : public AIS::AisDecoder
         return m_messages.size();
     }
 
-    /// decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed)
-    size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset) {
-        return AIS::AisDecoder::decodeMsg(_pNmeaBuffer, _uBufferSize, _uOffset, m_parser);
+    /// decode single sentence (returns the number of bytes processed; slower than processing a whole chunk, see 'decodeChunk(...)')
+    size_t decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize) {
+        
+        // NOTE: calls decoder twice to force backup of multi-line messages
+        size_t n = AIS::AisDecoder::decodeMsg(_pNmeaBuffer, _uBufferSize, 0, m_parser);
+        AIS::AisDecoder::decodeMsg(_pNmeaBuffer, n, n, m_parser);
+        
+        return n;
     }
 
     /// decode all sentences and buffer trailing data internally until next call
@@ -271,7 +276,8 @@ class AisQuickDecoder : public AIS::AisDecoder
     
     virtual void onSentence(const AIS::StringRef &_strSentence) override {}
     
-    virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
+    virtual void onMessage(const AIS::StringRef &_strMessage,
+                           const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
         AisMessage msg;
         
         m_strHeader = _strHeader;
@@ -302,7 +308,7 @@ class AisQuickDecoder : public AIS::AisDecoder
  private:
     AIS::DefaultSentenceParser  m_parser;
     std::queue<AisMessage>      m_messages;         ///< decoded messages -- quick decoder output
-    AIS::FileBuffer             m_buffer;           ///< buffer used internally to decode chunks of data
+    AIS::Buffer                 m_buffer;           ///< buffer used internally to decode chunks of data
     AIS::StringRef              m_strHeader;        ///< stores last header reference from 'onMessage(...)'
     AIS::StringRef              m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
     std::string                 m_strTimestamp;     ///< stores last META timestamp (decoded from header ot footer)
@@ -311,10 +317,15 @@ class AisQuickDecoder : public AIS::AisDecoder
 
 
 
-/* Push new data onto the decoder. Scans for a complete line and only consumes one line at a time. Returns the number of bytes processed. */
-int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize, size_t _uOffset)
+/*
+   Push new data onto the decoder.
+   Scans for a complete line and only consumes one line at a time.
+   Returns the number of bytes processed.
+   Slower than processing a whole chunk, see 'pushAisChunk(...)'.
+*/
+int pushAisSentence(const char *_pNmeaBuffer, size_t _uBufferSize)
 {
-    return (int)AisQuickDecoder::instance().decodeMsg(_pNmeaBuffer, _uBufferSize, _uOffset);
+    return (int)AisQuickDecoder::instance().decodeMsg(_pNmeaBuffer, _uBufferSize);
 }
 
 
