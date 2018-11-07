@@ -112,6 +112,12 @@ namespace AIS
      Sentence Parser base class.
      This class can be extended to pull out NMEA string and META info from custom sentence formats.
      
+     The simplest implementation for this class would just return any source sentence as the full NMEA sentence:
+        - 'onScanForNmea' just returns the input parameter
+        - 'getHeader' returns an empty string
+        - 'getFooter' returns an empty string
+        - 'getTimestamp' returns 0
+
      */
     class SentenceParser
     {
@@ -150,10 +156,9 @@ namespace AIS
      Basic error checking, including CRC checks, are done and also reported.
      No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
      
-     The 'onScanForNmea(...)' callback allows the decoder to support META data around the NMEA sentence.  The simplest implementation for this callback would just return the
-     input parameter if no META data is expected.  The META data footer and header are calculated based on the start and the end of the NMEA string in each NMEA sentence.  For
-     multiline messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').
-     
+     A SentenceParser object, supplied as a parameter to 'decodeMsg(...)', allows the decoder to support custom META data around the NMEA sentences.
+     For multiline messages only the header and footer of the first sentence is reported when decoding messages (reported via 'onMessage(...)').
+
      */
     class AisDecoder
     {

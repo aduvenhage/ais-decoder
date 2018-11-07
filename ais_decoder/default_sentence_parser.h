@@ -12,6 +12,9 @@ namespace AIS
     /**
      Default Sentence Parser
      
+     This implementation will scan past META data that start and end with a '\'.  It will also stop at NMEA CRC.
+     The META data footer and header are calculated based on the start and the end of the NMEA string in each sentence.
+     
      */
     class DefaultSentenceParser     : public SentenceParser
     {
