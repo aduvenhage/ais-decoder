@@ -108,9 +108,10 @@ StringRef DefaultSentenceParser::getFooter(const StringRef &_strLine, const Stri
 /* extracts the timestamp from the meta info */
 uint64_t DefaultSentenceParser::getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) const
 {
+    uint64_t uTimestamp = 0;
+    
     // try to get timestamp from header
     // NOTE: assumes header has comma seperated fields with 'c:' identifying unix timestamp
-    uint64_t uTimestamp = 0;
     if (_strHeader.size() > 0)
     {
         // seperate header into words
