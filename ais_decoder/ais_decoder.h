@@ -81,7 +81,7 @@ namespace AIS
         bool isComplete() const;
         
         /// returns full payload
-        void payload(Buffer &_payload) const;
+        void payload(std::string &_payload) const;
         
         /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
         const StringRef &header() const {return m_strHeader;}
@@ -207,7 +207,7 @@ namespace AIS
         /// returns the META footer of the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
         const StringRef &footer() const {return m_strFooter;}
         
-        /// returns the NMEA string of the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
+        /// returns the full NMEA string of the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
         const StringRef &payload() const {return m_strPayload;}
         
         /// returns all the sentences that contributed to the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
@@ -296,7 +296,7 @@ namespace AIS
         PayloadBuffer                                                           m_binaryBuffer;         ///< used internally to decode NMEA payloads
         std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;       ///< used internally to buffer multi-line message sentences
         std::array<StringRef, MAX_MSG_WORDS>                                    m_words;                ///< used internally to buffer NMEA words
-        Buffer                                                                  m_fragmentBuffer;       ///< used internally to join multiline fragments before decoding
+        std::string                                                             m_fragmentBuffer;       ///< used internally to join multiline fragments before decoding
         
         std::vector<StringRef>                                                  m_vecSentences;         ///< all NMEA/raw sentences for message - stored for each message just before user callbacks
         StringRef                                                               m_strHeader;            ///< extracted META header

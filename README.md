@@ -3,13 +3,17 @@ This project was created to learn more about AIS and see how easy it would be to
 
 The decoder is designed to work off of raw data (processed in blocks) received from, for example, a file or a socket.  The raw data sentences (or lines) may be seperated by '[LF]' or '[CR][LF]'.
 
-The key component to implement was the 6bit nibble packing and unpacking of arbitrarily sized signed and unsigned integers as well as strings (see PayloadBuffer in ais_decoder.h).
+The key component to implement was the 6bit nibble packing and unpacking of arbitrarily sized signed and unsigned integers as well as strings (see PayloadBuffer in ais_decoder.h).  The decoder interface also delivers clean strings (i.e. all characters after and including '@' removed and all trailing whitespace removed).
 
-The decoder consists of a base class that does the decoding, with pure virtual methods for each AIS messages type.  A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods, meta/payload extraction, as well as error handling methods (see the examples, for how this is done).  Basic error checking, including CRC checks, are done and errors are also reported.
+The decoder consists of a base class that does the decoding, with pure virtual methods for each AIS messages type.  A user of the decoder has to inherit from the decoder class and implement/override 'onTypeXX(...)' style methods, meta/payload extraction, as well as error handling methods (see the examples, for how this is done).  Basic error checking, including CRC checks, are done and errors are also reported through decoder interface.
 
-The current 'onTypeXX(...)' message callback are unique for each message type (types 1,2,3,4,5,18,19 & 24 currently supported).  No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
+The current 'onTypeXX(...)' message callback are unique for each message type (types 1, 2, 3, 4, 5, 9, 11, 18, 19, 24, 27 currently supported).  No assumtions are made on default or blank values and all values are returned as integers -- the user has to scale and convert the values like position and speed to floats and the desired units.
 
-The individual data sentences (per line) may also include meta data before or after the NMEA sentences.  The decoder contains a sentence parser class that should be extended by the user to extract the NMEA data from each sentence (see example applications and default_sensor_parser.h).  The meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  For multi-line messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').
+The individual data sentences (per line) may also include meta data before or after the NMEA sentences.  The decoder makes use of a sentence parser class that should be extended by the user to extract the NMEA data from each sentence (see example applications and default_sensor_parser.h).  The meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  For multi-line messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').  The decoder also provides access to the META and raw sentence data as messages are being decoded.  The following methods can be called from inside the 'onMessage()', 'onTypeXX()' or 'onDecodeError()' methods:
+ - 'header()' returns the extracted META data header
+ - 'footer()' returns the extracted META data footer
+ - 'payload()' returns the full NMEA payload
+ - 'sentences()' returns list of original sentences that contributed
 
 Some time was also spent on improving the speed of the NMEA string processing to see how quickly NMEA logs could be processed.  Currently the multi-threaded file reading examples (running a thread per file) achieve more than 3M NMEA messages per second, per thread.  When running on multiple logs concurrently (8 threads is a good number on modern hardware) 12M+ NMEA messages per second is possible.  During testing it was also found that most of the time was spent on the 6bit nibble packing and unpacking, not the file IO.
 
@@ -21,7 +25,7 @@ SWIG is used to provide Python bindings.
 - [x] CRC checking
 - [x] Multi-Sentence message handling
 - [x] Decoder base class
-- [x] Support types 1, 2, 3, 4, 5, 18, 19, 24 -- position reports and static info
+- [x] Support types 1, 2, 3, 4, 5, 9, 11, 18, 19, 24, 27
 - [x] Test with large data-sets (files)
 - [x] Validate payload sizes (reject messages, where type and size does not match)
 - [x] Build-up message stats (bytes processed, messages processed, etc.)

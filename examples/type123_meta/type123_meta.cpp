@@ -74,7 +74,7 @@ class AisCsvDecoder : public AIS::AisDecoder
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override
     {
         // decode META info to get timestamp
-        uint64_t uTimestamp = m_parser.getTimestamp(m_strHeader, m_strFooter);
+        uint64_t uTimestamp = m_parser.getTimestamp(header(), footer());
         
         // output to CSV
         m_fout << _uMsgType << ", "
@@ -85,8 +85,8 @@ class AisCsvDecoder : public AIS::AisDecoder
                << _uSog / 10.0 << ", "
                << _iCog / 10.0 << ", "
                << AIS::getAisNavigationStatus(_uNavstatus) << ", ["
-               << (std::string)m_strHeader << "], ["
-               << (std::string)m_strFooter << "]\n";
+               << (std::string)header() << "], ["
+               << (std::string)footer() << "]\n";
     }
     
     virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
@@ -117,13 +117,7 @@ class AisCsvDecoder : public AIS::AisDecoder
     virtual void onSentence(const AIS::StringRef &_strSentence) override {
     }
     
-    virtual void onMessage(const AIS::StringRef &_strMessage,
-                           const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
-        // temprarily store META info
-        // NOTE: the string references point to the source data and may become invalid after decoder has run through source data
-        m_strHeader = _strHeader;
-        m_strFooter = _strFooter;
-    }
+    virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {}
     
     virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
     
@@ -134,8 +128,6 @@ class AisCsvDecoder : public AIS::AisDecoder
     
  private:
     std::ofstream               m_fout;             ///< CVS output file
-    AIS::StringRef              m_strHeader;        ///< stores last header reference from 'onMessage(...)'
-    AIS::StringRef              m_strFooter;        ///< stores last footer reference from 'onMessage(...)'
     const AIS::SentenceParser   &m_parser;          ///< sentence parser being used
 };
 

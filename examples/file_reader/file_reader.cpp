@@ -1,6 +1,7 @@
 
 #include "../../ais_decoder/ais_decoder.h"
 #include "../../ais_decoder/ais_file.h"
+#include "../../ais_decoder/default_sentence_parser.h"
 #include "../utils.h"
 
 #include <string>
@@ -29,35 +30,6 @@
  
  
  */
-
-
-
-
-
-/// Dummy Sentence Parser (ignores any META data)
-class AisDummySentenceParser     : public AIS::SentenceParser
-{
- public:
-    /// called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload)
-    virtual AIS::StringRef onScanForNmea(const AIS::StringRef &_strSentence) const override {
-        return _strSentence;
-    }
-    
-    /// calc header string from original line and extracted NMEA payload
-    virtual AIS::StringRef getHeader(const AIS::StringRef &_strLine, const AIS::StringRef &_strNmea) const override {
-        return AIS::StringRef();
-    }
-    
-    /// calc footer string from original line and extracted NMEA payload
-    virtual AIS::StringRef getFooter(const AIS::StringRef &_strLine, const AIS::StringRef &_strNmea) const override {
-        return AIS::StringRef();
-    }
-    
-    /// extracts the timestamp from the meta info
-    virtual uint64_t getTimestamp(const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) const override {
-        return 0;
-    }
-};
 
 
 
@@ -132,7 +104,7 @@ void testAis(const std::string &_strLogPath)
     AisDummyDecoder decoder;
     
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
-    AisDummySentenceParser parser;
+    AIS::DefaultSentenceParser parser;
     AIS::processAisFile(std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath, decoder, parser, BLOCK_SIZE, progressCb);
     
     auto td = UTILS::CLOCK::getClockNow() - tsInit;

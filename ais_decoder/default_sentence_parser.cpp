@@ -48,63 +48,61 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
 /* calc header string from original line and extracted NMEA payload */
 StringRef DefaultSentenceParser::getHeader(const StringRef &_strLine, const StringRef &_strNmea) const
 {
-    if (_strLine.size() > _strNmea.size())
+    StringRef strHeader(_strLine.data(), 0);
+    
+    if (_strNmea.data() > _strLine.data())
     {
-        StringRef pHeader = _strLine.sub(0, _strNmea.data() - _strLine.data());
+        strHeader = _strLine.sub(0, _strNmea.data() - _strLine.data());
         
         // remove last '\'
-        if ( (pHeader.empty() == false) &&
-            (pHeader[pHeader.size() - 1] == '\\') )
+        if ( (strHeader.empty() == false) &&
+             (strHeader[strHeader.size() - 1] == '\\') )
         {
-            pHeader.m_uSize--;
+            strHeader.m_uSize--;
         }
         
         // remove first '\\'
-        if ( (pHeader.empty() == false) &&
-            (pHeader[0] == '\\') )
+        if ( (strHeader.empty() == false) &&
+             (strHeader[0] == '\\') )
         {
-            pHeader.m_psRef++;
-            pHeader.m_uSize--;
+            strHeader.m_psRef++;
+            strHeader.m_uSize--;
         }
-        
-        return pHeader;
     }
-    else
-    {
-        return StringRef(_strLine.data(), 0);
-    }
+    
+    return strHeader;
 }
 
 /* calc footer string from original line and extracted NMEA payload */
 StringRef DefaultSentenceParser::getFooter(const StringRef &_strLine, const StringRef &_strNmea) const
 {
-    // NOTE: '_strLine' will end with <CR><LF> or <LF>
-    if (_strLine.size() > _strNmea.size())
+    StringRef strFooter(_strLine.data(), 0);
+    
+    const char *pLineEnd = _strLine.data() + _strLine.size();
+    const char *pNmeaEnd = _strNmea.data() + _strNmea.size();
+    
+    if (pLineEnd > pNmeaEnd)
     {
-        StringRef strFooter(_strNmea.data() + _strNmea.size(),
-                            _strLine.size() - (_strNmea.data() + _strNmea.size() - _strLine.data()) - 1);
+        // NOTE: '_strLine' will end with <CR><LF> or <LF>
+        strFooter = StringRef(pNmeaEnd, pLineEnd - pNmeaEnd - 1);
         
         // remove last '<CR>'
         if ( (strFooter.empty() == false) &&
-            (strFooter[strFooter.size() - 1] == '\r') )
+             (strFooter[strFooter.size() - 1] == '\r') )
         {
             strFooter.m_uSize--;
         }
         
         // remove first ','
         if ( (strFooter.empty() == false) &&
-            (strFooter[0] == ',') )
+             (strFooter[0] == ',') )
         {
             strFooter.m_psRef++;
             strFooter.m_uSize--;
         }
-        
-        return strFooter;
     }
-    else
-    {
-        return StringRef(_strLine.data(), 0);
-    }
+    
+    return strFooter;
 }
 
 /* extracts the timestamp from the meta info */

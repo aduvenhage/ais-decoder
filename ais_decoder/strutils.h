@@ -149,6 +149,7 @@ namespace AIS
 
         size_t size() const {return m_uSize;}
         bool empty() const {return m_uSize == 0;}
+        void clear() {m_psRef = nullptr; m_uSize = 0;}
         
         const char *begin() const {return m_psRef;}
         const char *end() const {return m_psRef + m_uSize;}
@@ -165,14 +166,21 @@ namespace AIS
         }
         
         StringRef sub(size_t _i, size_t _n = npos) const {
-            if (_i < m_uSize)
+            
+            if ( (_n > 0) &&
+                 (_i < m_uSize) )
             {
-                return StringRef(m_psRef+_i, std::min(_n, m_uSize - _i));
+                if (_i + _n > m_uSize)
+                {
+                    return StringRef(m_psRef + _i, m_uSize - _i);
+                }
+                else
+                {
+                    return StringRef(m_psRef + _i, _n - _i);
+                }
             }
-            else
-            {
-                return StringRef();
-            }
+            
+            return StringRef();
         }
 
         const char        *m_psRef;

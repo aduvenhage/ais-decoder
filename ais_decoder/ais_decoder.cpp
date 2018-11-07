@@ -247,7 +247,7 @@ bool MultiSentence::isComplete() const
     return m_iFragmentCount == m_iFragmentNum;
 }
 
-void MultiSentence::payload(Buffer &_payload) const
+void MultiSentence::payload(std::string &_payload) const
 {
     _payload.clear();
     for (size_t i = 0; i < m_vecPayload.size(); i++)
@@ -685,34 +685,36 @@ void AisDecoder::decodeMobileAisMsg(const StringRef &_strPayload, int _iFillBits
 /* check sentence CRC */
 bool AisDecoder::checkCrc(const StringRef &_strPayload)
 {
-    size_t n = findLastOf(_strPayload, '*');
-    if (n != StringRef::npos)
+    if (_strPayload.size() > 3)
     {
-        // for some reason the std::strol function is quite slow, so just conver the checksum manually
-        const uint16_t ascii_t[32] = {
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
-            257, 257, 257, 257, 257, 257, 257,
-            10, 11, 12, 13, 14, 15, 
-            257, 257, 257, 257, 257, 257, 257, 257, 257
-        };
-        
-        uint16_t iCrc = ascii_t[(_strPayload.data()[n+1] - '0') & 31]*16 + ascii_t[(_strPayload.data()[n+2] - '0') & 31];
-        
-        if (*_strPayload.data() == '!')
+        const char *pCrc = _strPayload.data() + _strPayload.size() - 3;
+        if (*pCrc == '*')
         {
-            uint16_t iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, n - 1));
-            return iCrc == iCrcCalc;
-        }
-        else
-        {
-            uint16_t iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), n));
-            return iCrc == iCrcCalc;
+            // for some reason the std::strol function is quite slow, so just conver the checksum manually
+            const uint16_t ascii_t[32] = {
+                0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+                257, 257, 257, 257, 257, 257, 257,
+                10, 11, 12, 13, 14, 15,
+                257, 257, 257, 257, 257, 257, 257, 257, 257
+            };
+            
+            uint16_t iCrc = (ascii_t[(*(pCrc + 1) - '0') & 31] << 4) +
+                            ascii_t[(*(pCrc + 2) - '0') & 31];
+            
+            if (*_strPayload.data() == '!')
+            {
+                uint16_t iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data() + 1, _strPayload.size() - 4));
+                return iCrc == iCrcCalc;
+            }
+            else
+            {
+                uint16_t iCrcCalc = (int)AIS::crc(StringRef(_strPayload.data(), _strPayload.size() - 3));
+                return iCrc == iCrcCalc;
+            }
         }
     }
-    else
-    {
-        return false;
-    }
+    
+    return false;
 }
 
 /*
@@ -726,6 +728,12 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
     size_t n = getLine(strLine, _pNmeaBuffer, _uBufferSize, _uOffset);
     if (n > 0)
     {
+        // clear user data
+        m_strHeader.clear();
+        m_strFooter.clear();
+        m_strPayload.clear();
+        m_vecSentences.clear();
+
         // provide raw data back to user
         onSentence(strLine);
         
@@ -762,10 +770,8 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                 {
                     // setup user data
                     m_strHeader = _parser.getHeader(strLine, strNmea);
-                    m_strFooter = _parser.getHeader(strLine, strNmea);
+                    m_strFooter = _parser.getFooter(strLine, strNmea);
                     m_strPayload = m_words[5];
-
-                    m_vecSentences.clear();
                     m_vecSentences.push_back(strLine);
                     
                     try
@@ -817,7 +823,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                         if (pMultiSentence != nullptr)
                         {
                             // add new fragment and check for any message payload/fragment errors
-                            bool bSuccess = pMultiSentence->addFragment(iFragmentNum, m_strPayload, strLine);
+                            bool bSuccess = pMultiSentence->addFragment(iFragmentNum, m_words[5], strLine);
                             
                             if (bSuccess == true)
                             {
