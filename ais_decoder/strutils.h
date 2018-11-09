@@ -2,7 +2,7 @@
 #define AIS_STR_UTIL_H
 
 
-#include <string.h>
+#include <cstring>
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
