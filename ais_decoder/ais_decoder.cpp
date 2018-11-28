@@ -805,7 +805,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                 }
                 
                 // build up multi-sentence payloads
-                else if (iFragmentCount > 1)
+                else // if (iFragmentCount > 1)
                 {
                     int iMsgId = strtoi(m_words[3]);
                     int iFragmentNum = single_digit_strtoi(m_words[2]);
