@@ -16,7 +16,7 @@ namespace
 		return _byteswap_uint64(_i);
 	}
 #else
-	template <int_type>
+	template <typename int_type>
 	int_type bswap64(int_type _i) {
 		return __builtin_bswap64(_i);
 	}
