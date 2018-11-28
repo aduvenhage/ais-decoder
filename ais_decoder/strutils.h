@@ -115,7 +115,7 @@ namespace AIS
     inline std::string stripTrailingWhitespace(const std::string &_str)
     {
         std::string ret;
-        stripTrailingWhitespace((std::string&)ret);
+        stripTrailingWhitespace((std::string&)_str);
         return ret;
     }
     
@@ -124,7 +124,7 @@ namespace AIS
     /// quick string object that just references data from another buffer
     struct StringRef
     {
-        static const size_t npos = -1;
+        static const size_t npos = (size_t)-1;	// npos
         
         StringRef()
             :m_psRef(nullptr),
@@ -257,7 +257,7 @@ namespace AIS
             }
         }
         
-        return -1;
+        return (size_t)-1;	// npos
     }
     
     /// Converts string to an integer. Returns 0 if conversion failed.
@@ -291,14 +291,12 @@ namespace AIS
             return 0;
         } else {
             // \note getLine() output includes <CR> and <LF> chars
-            int nb = next - pData + 1;
+            int nb = (int)(next - pData + 1);
             _strOutput.m_psRef = pData;
             _strOutput.m_uSize = nb;
             
             return nb;
         }
-
-        return 0;
     }
     
  	/**

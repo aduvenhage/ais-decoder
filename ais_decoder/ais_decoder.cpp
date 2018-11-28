@@ -2,9 +2,26 @@
 #include "ais_decoder.h"
 #include "strutils.h"
 
+#include <stdlib.h>
 
 
 using namespace AIS;
+
+
+namespace
+{
+#ifdef WIN32
+	template <typename int_type>
+	int_type bswap64(int_type _i){
+		return _byteswap_uint64(_i);
+	}
+#else
+	template <int_type>
+	int_type bswap64(int_type _i) {
+		return __builtin_bswap64(_i);
+	}
+#endif
+}
 
 
 
@@ -126,7 +143,7 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
         if (remainder <= 0) {
             // accumulator will fill up, commit to output buffer
             accumulator |= (uint64_t(val) >> -remainder);
-            *((uint64_t*)out_ptr) = __builtin_bswap64(accumulator);
+            *((uint64_t*)out_ptr) = bswap64(accumulator);
             out_ptr += 8;
             
             if (remainder < 0) { 
@@ -155,7 +172,7 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
         if (remainder <= 0) {
             // accumulator will fill up, commit to output buffer
             accumulator |= (uint64_t(val) >> -remainder);
-            *((uint64_t*)out_ptr) = __builtin_bswap64(accumulator);
+            *((uint64_t*)out_ptr) = bswap64(accumulator);
             out_ptr += 8;
             
             if (remainder < 0) { 
@@ -174,7 +191,7 @@ int AIS::decodeAscii(PayloadBuffer &_buffer, const StringRef &_strPayload, int _
         
         in_ptr++;
     }
-    *((uint64_t*)out_ptr) = __builtin_bswap64(accumulator);
+    *((uint64_t*)out_ptr) = bswap64(accumulator);
     
     return (int)(_strPayload.size() * 6 - _iFillBits);
 }

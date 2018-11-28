@@ -46,45 +46,46 @@ class AisDummyDecoder : public AIS::AisDecoder
     {}
     
  protected:
-    virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int _iRot, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
-    
-    virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
-                           bool _bPosAccuracy, int _iPosLon, int _iPosLat) override {}
-    
-    virtual void onType5(unsigned int _uMmsi, unsigned int _uImo, const std::string &_strCallsign, const std::string &_strName,
-                         unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard, unsigned int _uFixType,
-                         unsigned int _uEtaMonth, unsigned int _uEtaDay, unsigned int _uEtaHour, unsigned int _uEtaMinute, unsigned int _uDraught,
-                         const std::string &_strDestination) override {}
-    
-    virtual void onType9(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, unsigned int _iAltitude) override {}
-    
-    virtual void onType18(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading) override {}
-    
-    virtual void onType19(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading,
-                          const std::string &_strName, unsigned int _uType,
-                          unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
-    
-    virtual void onType21(unsigned int _uMmsi, unsigned int _uAidType, const std::string &_strName, bool _bPosAccuracy, int _iPosLon, int _iPosLat,
-                          unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
-    
-    virtual void onType24A(unsigned int _uMmsi, const std::string &_strName) override {}
-    
-    virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
-    
-    virtual void onType27(unsigned int _uMmsi, unsigned int _uNavstatus, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog) override {}
-    
-    virtual void onSentence(const AIS::StringRef &_strSentence) override {}
-    
-    virtual void onMessage(const AIS::StringRef &_strMessage, const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {}
-    
-    virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
+	 virtual void onType123(unsigned int, unsigned int, unsigned int, int, unsigned int, bool, int, int, int, int) override {}
 
-    virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {printf("%s\n", _strError.c_str());}
+	 virtual void onType411(unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int,
+		 bool, int, int) override {}
+
+	 virtual void onType5(unsigned int, unsigned int, const std::string &, const std::string &,
+		 unsigned int, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int,
+		 unsigned int, unsigned int, unsigned int, unsigned int, unsigned int,
+		 const std::string &) override {}
+
+	 virtual void onType9(unsigned int, unsigned int, bool, int, int, int, unsigned int) override {}
+
+	 virtual void onType18(unsigned int, unsigned int, bool, int, int, int, int) override {}
+
+	 virtual void onType19(unsigned int, unsigned int, bool, int, int, int, int,
+		 const std::string &, unsigned int,
+		 unsigned int, unsigned int, unsigned int, unsigned int) override {}
+
+	 virtual void onType21(unsigned int, unsigned int, const std::string &, bool, int, int,
+		 unsigned int, unsigned int, unsigned int, unsigned int) override {}
+
+	 virtual void onType24A(unsigned int, const std::string &) override {}
+
+	 virtual void onType24B(unsigned int, const std::string &, unsigned int, unsigned int, unsigned int, unsigned int, unsigned int) override {}
+
+	 virtual void onType27(unsigned int, unsigned int, unsigned int, bool, int, int, int) override {}
+
+	 virtual void onSentence(const AIS::StringRef &) override {}
+
+	 virtual void onMessage(const AIS::StringRef &,
+		 const AIS::StringRef &, const AIS::StringRef &) override {}
+
+	 virtual void onNotDecoded(const AIS::StringRef &, int) override {}
+
+     virtual void onDecodeError(const AIS::StringRef &, const std::string &_strError) override {printf("%s\n", _strError.c_str());}
 };
 
 
 /// decoder callback that just prints progress/stats to console
-void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
+void progressCb(size_t , const AIS::AisDecoder &)
 {
 }
 
@@ -157,5 +158,5 @@ int main()
         runAndWait();
     }
     
-    return 0;
+    //return 0;
 }

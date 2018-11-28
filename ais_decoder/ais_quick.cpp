@@ -47,7 +47,7 @@ class AisQuickDecoder : public AIS::AisDecoder
     
     /// check how many messages are available
     int numMessages() {
-        return m_messages.size();
+        return (int)m_messages.size();
     }
 
     /// decode single sentence (returns the number of bytes processed; slower than processing a whole chunk, see 'decodeChunk(...)')
@@ -274,7 +274,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         m_messages.push(std::move(msg));
     }
     
-    virtual void onSentence(const AIS::StringRef &_strSentence) override {}
+    virtual void onSentence(const AIS::StringRef &/*_strSentence*/) override {}
     
     virtual void onMessage(const AIS::StringRef &_strMessage,
                            const AIS::StringRef &_strHeader, const AIS::StringRef &_strFooter) override {
@@ -290,7 +290,7 @@ class AisQuickDecoder : public AIS::AisDecoder
         m_messages.push(std::move(msg));
     }
     
-    virtual void onNotDecoded(const AIS::StringRef &_strMessage, int _iMsgType) override {}
+    virtual void onNotDecoded(const AIS::StringRef &/*_strMessage*/, int /*_iMsgType*/) override {}
     
     virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
         AisMessage msg;
