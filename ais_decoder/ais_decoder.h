@@ -158,7 +158,15 @@ namespace AIS
      
      A SentenceParser object, supplied as a parameter to 'decodeMsg(...)', allows the decoder to support custom META data around the NMEA sentences.
      For multiline messages only the header and footer of the first sentence is reported when decoding messages (reported via 'onMessage(...)').
-
+     
+     The decoder also provides access to the META and raw sentence data as messages are being decoded.
+     The following methods can be called from inside the 'onMessage()', 'onTypeXX()' or 'onDecodeError()' methods:
+     
+     - 'header()' returns the extracted META data header
+     - 'footer()' returns the extracted META data footer
+     - 'payload()' returns the full NMEA payload
+     - 'sentences()' returns list of original sentences that contributed
+     
      */
     class AisDecoder
     {

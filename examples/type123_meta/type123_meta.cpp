@@ -4,7 +4,7 @@
 #include "../../ais_decoder/ais_utils.h"
 #include "../../ais_decoder/strutils.h"
 #include "../../ais_decoder/default_sentence_parser.h"
-#include "../utils.h"
+#include "../example_utils.h"
 
 #include <string>
 #include <vector>
@@ -147,6 +147,7 @@ void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
  */
 void createCsv(const std::string &_strLogPath)
 {
+    // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
     const size_t BLOCK_SIZE = 1024 * 1024 * 8;
     auto tsInit = UTILS::CLOCK::getClockNow();
@@ -155,7 +156,6 @@ void createCsv(const std::string &_strLogPath)
     AIS::DefaultSentenceParser parser;
     AisCsvDecoder decoder(strInputFilePath + ".csv", parser);
     
-    // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     AIS::processAisFile(strInputFilePath, decoder, parser, BLOCK_SIZE, progressCb);
     
     auto td = UTILS::CLOCK::getClockNow() - tsInit;

@@ -112,7 +112,7 @@ set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_RELEASE NDEBUG=1)
 # capture project/build/test files (not compiled, but visible in solutions)
 set(PROJ_FILES
     ${CMAKE_SOURCE_DIR}/README.md
-    ${CMAKE_SOURCE_DIR}/examples/utils.h
+    ${CMAKE_SOURCE_DIR}/examples/example_utils.h
     ${CMAKE_SOURCE_DIR}/python/ais_decoder.i
     ${CMAKE_SOURCE_DIR}/python/setup.py
 )
@@ -127,6 +127,7 @@ add_subdirectory("examples/file_reader")
 add_subdirectory("examples/file_reader_mt")
 add_subdirectory("examples/quick")
 add_subdirectory("examples/type123_meta")
+add_subdirectory("examples/nmea2nmea")
 
 
 

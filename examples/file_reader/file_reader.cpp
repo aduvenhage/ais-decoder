@@ -2,7 +2,7 @@
 #include "../../ais_decoder/ais_decoder.h"
 #include "../../ais_decoder/ais_file.h"
 #include "../../ais_decoder/default_sentence_parser.h"
-#include "../utils.h"
+#include "../example_utils.h"
 
 #include <string>
 #include <vector>
@@ -127,14 +127,14 @@ int main()
         testAis("LSS_20180514.ITU123_data.bu1");
         testAis("nmea-sample_rep.txt");
         */
-        testAis("nmea-sample.txt");
-        //testAis("20170211.log");
-        //testAis("20170212.log");
-        //testAis("20170213.log");
-        //testAis("20170214.log");
-        //testAis("20170215.log");
-        //testAis("20170216.log");
-        //testAis("20170217.log");
+        //testAis("nmea-sample.txt");
+        testAis("20170211.log");
+        testAis("20170212.log");
+        testAis("20170213.log");
+        testAis("20170214.log");
+        testAis("20170215.log");
+        testAis("20170216.log");
+        testAis("20170217.log");
         /*
         testAis("datacron_20160103.txt");
         testAis("datacron_20160104.txt");

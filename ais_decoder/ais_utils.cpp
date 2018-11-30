@@ -558,6 +558,69 @@ namespace
         
         return types;
     };
+    
+    
+    /// extract MDI from full 9 digit MMSI string
+    unsigned int getMdiFromFullMmsi(const std::string &_strFullMmsi)
+    {
+        unsigned int uMid = 0;
+        
+        if ( (_strFullMmsi.compare(0, 3, "111") == 0) ||
+             (_strFullMmsi.compare(0, 3, "970") == 0) ||
+             (_strFullMmsi.compare(0, 3, "972") == 0) ||
+             (_strFullMmsi.compare(0, 3, "974") == 0) )
+        {
+            uMid = std::strtoul(_strFullMmsi.substr(3, 3).c_str(), nullptr, 10);
+        }
+        else if ( (_strFullMmsi.compare(0, 2, "00") == 0) ||
+                  (_strFullMmsi.compare(0, 2, "98") == 0) ||
+                  (_strFullMmsi.compare(0, 2, "99") == 0) )
+        {
+            uMid = std::strtoul(_strFullMmsi.substr(2, 3).c_str(), nullptr, 10);
+        }
+        else if ( (_strFullMmsi.compare(0, 1, "0") == 0) ||
+                  (_strFullMmsi.compare(0, 1, "8") == 0) )
+        {
+            uMid = std::strtoul(_strFullMmsi.substr(1, 3).c_str(), nullptr, 10);
+        }
+        else
+        {
+            uMid = std::strtoul(_strFullMmsi.substr(0, 3).c_str(), nullptr, 10);
+        }
+        
+        return uMid;
+    }
+    
+    /// extract MDI from MMSI integer value (quicker than method above if MMSI was an int anyway)
+    unsigned int getMdiFromMmsi(long _iMmsi)
+    {
+        long a = _iMmsi / 1000000;
+        if ( (a == 111) ||
+             (a == 970) ||
+             (a == 972) ||
+             (a == 974) )
+        {
+            return _iMmsi / 1000 - a * 1000;
+        }
+
+        long b = _iMmsi / 10000000;
+        if ( (b == 0) ||
+             (b == 98) ||
+             (b == 99) )
+        {
+            return _iMmsi / 10000 - b * 1000;
+        }
+        
+
+        long c = _iMmsi / 100000000;
+        if ( (c == 0) ||
+             (c == 8) )
+        {
+            return _iMmsi / 100000 - c * 1000;
+        }
+        
+        return a;
+    }
 };
 
 
@@ -644,36 +707,27 @@ const std::string &AIS::getAisNavigationStatus(int _iRawAisCode)
 }
 
 
+/* get MDI country code from MMSI */
+unsigned int AIS::mmsi_to_mdi(long _iMmsi)
+{
+    return getMdiFromMmsi(_iMmsi);
+}
+
+
+/* get MDI country code from MMSI */
+unsigned int AIS::mmsi_to_mdi(const std::string &_strMmsi)
+{
+    std::string strFullMmsi = AIS::mmsi_to_string(_strMmsi);
+    return getMdiFromFullMmsi(strFullMmsi);
+}
+
+
 /* does a lookup of the country/flag details from MMSI */
 const std::pair<std::string, std::string> &AIS::getAisCountryCodes(const std::string &_strMmsi)
 {
     static std::vector<std::pair<std::string, std::string>> countryList = loadCountryCodes();
     std::string strFullMmsi = AIS::mmsi_to_string(_strMmsi);
-    size_t uMid = 0;
-    
-    if ( (strFullMmsi.compare(0, 3, "111") == 0) ||
-         (strFullMmsi.compare(0, 3, "970") == 0) ||
-         (strFullMmsi.compare(0, 3, "972") == 0) ||
-         (strFullMmsi.compare(0, 3, "974") == 0) )
-    {
-        uMid = std::strtoul(strFullMmsi.substr(3, 3).c_str(), nullptr, 10);
-    }
-    else if ( (strFullMmsi.compare(0, 2, "00") == 0) ||
-              (strFullMmsi.compare(0, 2, "98") == 0) ||
-              (strFullMmsi.compare(0, 2, "99") == 0) )
-    {
-        uMid = std::strtoul(strFullMmsi.substr(2, 3).c_str(), nullptr, 10);
-    }
-    else if ( (strFullMmsi.compare(0, 1, "0") == 0) ||
-              (strFullMmsi.compare(0, 1, "8") == 0) )
-    {
-        uMid = std::strtoul(strFullMmsi.substr(1, 3).c_str(), nullptr, 10);
-    }
-    else
-    {
-        uMid = std::strtoul(strFullMmsi.substr(0, 3).c_str(), nullptr, 10);
-    }
-    
+    size_t uMid = getMdiFromFullMmsi(strFullMmsi);
     if (uMid >= countryList.size())
     {
         uMid = 0;
@@ -681,6 +735,7 @@ const std::pair<std::string, std::string> &AIS::getAisCountryCodes(const std::st
     
     return countryList[uMid];
 }
+
 
 /* does a lookup of the transmitter class from MMSI */
 const std::string &AIS::getAisTransmitterClass(const std::string &_strMmsi)

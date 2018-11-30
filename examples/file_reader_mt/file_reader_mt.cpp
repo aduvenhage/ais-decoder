@@ -2,7 +2,7 @@
 #include "../../ais_decoder/ais_decoder.h"
 #include "../../ais_decoder/ais_file.h"
 #include "../../ais_decoder/default_sentence_parser.h"
-#include "../utils.h"
+#include "../example_utils.h"
 
 #include <string>
 #include <vector>

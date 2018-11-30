@@ -30,6 +30,12 @@ namespace AIS
     /// formats name and removes illegal characters
     std::string getCleanName(const std::string &_str);
 
+    /// get MDI country code from MMSI
+    unsigned int mmsi_to_mdi(long _iMmsi);
+    
+    /// get MDI country code from MMSI
+    unsigned int mmsi_to_mdi(const std::string &_strMmsi);
+    
     /// make sure mmsi has 9 digits
     std::string mmsi_to_string(long _iMmsi);
 
