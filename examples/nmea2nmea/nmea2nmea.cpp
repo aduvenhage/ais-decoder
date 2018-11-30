@@ -72,6 +72,12 @@ class BufferedFileOut
 
 
 
+/**
+ Vessel info lookup (DB indexed by MMSI).
+ 
+ TODO: look at a more efficient way (faster lookup) to store vessel info.
+ 
+ */
 struct VesselDb
 {
     void updateVesselType(unsigned int _uMmsi, unsigned int _uType)
