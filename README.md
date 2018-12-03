@@ -9,6 +9,8 @@ The decoder consists of a base class that does the decoding, with pure virtual m
 
 The current 'onTypeXX(...)' message callback are unique for each message type (types 1, 2, 3, 4, 5, 9, 11, 18, 19, 24, 27 currently supported).  No assumtions are made on default or blank values and all values are returned as integers -- the user has to scale and convert the values like position and speed to floats and the desired units.
 
+The method 'enableMsgTypes(...)' can be used to enable/disable the decoding of specific messages. For example 'enableMsgTypes({1, 5})' will cause only type 1 and type 5 to be decoded internally, which could increase decoding performance, since the decoder will just skip over other message types.  The method takes a list or set of integers, for example '{1, 2, 3}' or '{5}'.
+
 The individual data sentences (per line) may also include meta data before or after the NMEA sentences.  The decoder makes use of a sentence parser class that should be extended by the user to extract the NMEA data from each sentence (see example applications and default_sensor_parser.h).  The meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  For multi-line messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').  The decoder also provides access to the META and raw sentence data as messages are being decoded.  The following methods can be called from inside the 'onMessage()', 'onTypeXX()' or 'onDecodeError()' methods:
  - 'header()' returns the extracted META data header
  - 'footer()' returns the extracted META data footer

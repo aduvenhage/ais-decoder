@@ -8,6 +8,8 @@
 #include <string>
 #include <vector>
 #include <array>
+#include <set>
+
 
 
 namespace AIS
@@ -156,6 +158,9 @@ namespace AIS
      Basic error checking, including CRC checks, are done and also reported.
      No assumtions are made on default or blank values -- all values are returned as integers and the user has to scale and convert the values like position and speed to floats and the desired units.
      
+     The method 'enableMsgTypes(...)' can be used to enable/disable the decoding of specific messages. For example 'enableMsgTypes({1, 5})' will cause only type 1 and type 5 to be decoded internally, which could
+     increase decoding performance, since the decoder will just skip over other message types.  The method takes a list or set of integers, for example '{1, 2, 3}' or '{5}'.
+     
      A SentenceParser object, supplied as a parameter to 'decodeMsg(...)', allows the decoder to support custom META data around the NMEA sentences.
      For multiline messages only the header and footer of the first sentence is reported when decoding messages (reported via 'onMessage(...)').
      
@@ -184,6 +189,12 @@ namespace AIS
         
         /// returns the user defined index
         int index() const {return m_iIndex;}
+        
+        /**
+            Enables which messages types to decode.
+            An empty set will enable all message types.
+         */
+        void enableMsgTypes(const std::set<int> &_types);
         
         /**
             Decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed, or 0 when no more messages can be decoded).
@@ -262,6 +273,12 @@ namespace AIS
         virtual void onDecodeError(const StringRef &_strPayload, const std::string &_strError) = 0;
         
      private:
+        /// enable/disable msg callback
+        void setMsgCallback(int _iType, pfnMsgCallback _pfnCb, bool _bEnabled);
+                            
+        /// enable/disable msg callback
+        void setMsgCallback(int _iType, pfnMsgCallback _pfnCb, const std::set<int> &_enabledTypes);
+        
         /// check sentence CRC
         bool checkCrc(const StringRef &_strPayload);
         

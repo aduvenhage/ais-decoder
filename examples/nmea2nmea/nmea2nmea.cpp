@@ -9,17 +9,22 @@
 #include <string>
 #include <vector>
 #include <stdio.h>
-#include <unordered_map>
-#include <unordered_set>
+#include <map>
+#include <set>
 
 
 /*
  
  
  
+ This is just a very simple NMEA to NMEA file writing example.  NMEA strings are decoded, filtered and then writen to a new file.
  
  
- 
+ Current limitations:
+ - the VesselDB container is a standard map and set combination that could be improved on
+ - the filtering method 'allowMessage(...)' and this class only allows for filtering of single values
+   (typically you would like to check for sets of values)
+
  
  
  */
@@ -90,13 +95,16 @@ struct VesselDb
         return m_mapMmsi2Type[_uMmsi].count(_uType) > 0;
     }
     
-    std::unordered_map<unsigned int, std::unordered_set<unsigned int>>       m_mapMmsi2Type;
+    std::map<unsigned int, std::set<unsigned int>>       m_mapMmsi2Type;
 };
 
 
 /**
  
  This decoder looks at type 5 and indexes some vessel properties on MMSI.
+ Use it to build up a vessel DB from some data.
+ 
+ NOTE: 'enableMsgTypes({5, 19, 24})' is called in decoder constructor to limit decoding to types 5, 19 & 24 only
  
  */
 class AisType5Db : public AIS::AisDecoder
@@ -105,7 +113,10 @@ public:
     AisType5Db(VesselDb &_db, const AIS::SentenceParser &_parser)
         :m_parser(_parser),
          m_db(_db)
-    {}
+    {
+        // set decoder to decode only type 5s
+        enableMsgTypes({5, 19, 24});
+    }
     
 protected:
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int /*_iRot*/, unsigned int _uSog, bool /*_bPosAccuracy*/, int _iPosLon, int _iPosLat, int _iCog, int /*_iHeading*/) override {}
@@ -127,15 +138,21 @@ protected:
     
     virtual void onType19(unsigned int _uMmsi, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog, int _iHeading,
                           const std::string &_strName, unsigned int _uType,
-                          unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
-    
+                          unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override
+    {
+        m_db.updateVesselType(_uMmsi, _uType);
+    }
+
     virtual void onType21(unsigned int _uMmsi, unsigned int _uAidType, const std::string &_strName, bool _bPosAccuracy, int _iPosLon, int _iPosLat,
                           unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
     
     virtual void onType24A(unsigned int _uMmsi, const std::string &_strName) override {}
     
-    virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override {}
-    
+    virtual void onType24B(unsigned int _uMmsi, const std::string &_strCallsign, unsigned int _uType, unsigned int _uToBow, unsigned int _uToStern, unsigned int _uToPort, unsigned int _uToStarboard) override
+    {
+        m_db.updateVesselType(_uMmsi, _uType);
+    }
+
     virtual void onType27(unsigned int _uMmsi, unsigned int _uNavstatus, unsigned int _uSog, bool _bPosAccuracy, int _iPosLon, int _iPosLat, int _iCog) override {}
     
     /// called on every sentence (raw data) received (includes all characters, including NL, CR, etc.; called before any validation or CRCs checks are performed)
@@ -158,13 +175,14 @@ private:
 
 /**
  
- 
- 
- 
  Picks out specific AIS messages and writes original sentences to a new file
  
+ NOTE: this is just a very simple example.
+ - the VesselDB container is a standard map and set combination that could be improved on
+ - the filtering method 'allowMessage(...)' and this class only allows for filtering of single values
+   (typically you would like to check for sets of values)
  
- 
+ NOTE: NMEA is output if any of the rules fire.
  
  */
 class AisNmeaFilter : public AIS::AisDecoder
@@ -181,13 +199,18 @@ class AisNmeaFilter : public AIS::AisDecoder
          m_uTargetMsgType(_uTargetMsgType),
          m_uTargetCountryCode(_uTargetCountryCode),
          m_uTargetType(_uType)
-    {}
+    {
+        if (_uTargetMsgType > 0)
+        {
+            // set decoder to decode only specified type
+            enableMsgTypes({(int)_uTargetMsgType});
+        }
+    }
     
  protected:
     bool allowMessage(unsigned int _uMsgType, unsigned int _uMmsi)
     {
         // NOTE: the message is allowed if any of the rules fire (i.e. OR)
-        
         if  ( (_uMsgType == m_uTargetMsgType) ||
               (m_uTargetCountryCode == AIS::mmsi_to_mdi(_uMmsi)) )
         {
@@ -364,7 +387,7 @@ void createFilteredFile(const std::string &_strLogPath, const std::string &_strO
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
-    const size_t BLOCK_SIZE = 1024 * 1024 * 2;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 4;
     auto tsInit = UTILS::CLOCK::getClockNow();
 
     // create decoder instance
@@ -391,7 +414,7 @@ void buildVesselDb(VesselDb &_db, const std::string &_strLogPath)
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
-    const size_t BLOCK_SIZE = 1024 * 1024 * 2;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 4;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
     // create decoder instance
@@ -416,8 +439,15 @@ int main()
     std::string pathOutput = "filtered_nmea.txt";
 
     VesselDb db;
+    printf("Building vessel DB... \n");
     buildVesselDb(db, pathInput);
-    createFilteredFile(pathInput, pathOutput, db, 0, 0, 70);
-
+    
+    // NOTE: NMEA is output if any of the rules fire.
+    printf("Creating filtered file... \n");
+    createFilteredFile(pathInput, pathOutput, db,
+                       0,       // msg type: 0 = ignore
+                       0,       // country MDI: 0 = ignore
+                       70);     // class code: 0 = ignore
+    
     return 0;
 }

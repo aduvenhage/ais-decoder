@@ -327,20 +327,52 @@ AisDecoder::AisDecoder(int _iIndex)
      m_uDecodingErrors(0),
      m_vecMsgCallbacks{}
 {
-    // attach callbacks to relevant message types
+    enableMsgTypes({});
+}
+
+
+/* enable/disable msg callback */
+void AisDecoder::setMsgCallback(int _iType, pfnMsgCallback _pfnCb, bool _bEnabled)
+{
+    if ( (_iType >= 0) &&
+         (_iType < m_vecMsgCallbacks.size()) )
+    {
+        if (_bEnabled == true)
+        {
+            m_vecMsgCallbacks[_iType] = _pfnCb;
+        }
+        else
+        {
+            m_vecMsgCallbacks[_iType] = nullptr;
+        }
+    }
+}
+
+/* enable/disable msg callback */
+void AisDecoder::setMsgCallback(int _iType, pfnMsgCallback _pfnCb, const std::set<int> &_enabledTypes)
+{
     // NOTE: some callbacks attach to multiple message types
-    m_vecMsgCallbacks[1] = &AisDecoder::decodeType123;
-    m_vecMsgCallbacks[2] = &AisDecoder::decodeType123;
-    m_vecMsgCallbacks[3] = &AisDecoder::decodeType123;
-    m_vecMsgCallbacks[4] = &AisDecoder::decodeType411;
-    m_vecMsgCallbacks[5] = &AisDecoder::decodeType5;
-    m_vecMsgCallbacks[9] = &AisDecoder::decodeType9;
-    m_vecMsgCallbacks[11] = &AisDecoder::decodeType411;
-    m_vecMsgCallbacks[18] = &AisDecoder::decodeType18;
-    m_vecMsgCallbacks[19] = &AisDecoder::decodeType19;
-    m_vecMsgCallbacks[21] = &AisDecoder::decodeType21;
-    m_vecMsgCallbacks[24] = &AisDecoder::decodeType24;
-    m_vecMsgCallbacks[27] = &AisDecoder::decodeType27;
+    setMsgCallback(_iType, _pfnCb, (_enabledTypes.empty() == true) || (_enabledTypes.count(_iType) > 0));
+}
+
+/*
+ Enables which messages types to decode.
+ An empty set will enable all message types.
+ */
+void AisDecoder::enableMsgTypes(const std::set<int> &_types)
+{
+    setMsgCallback(1, &AisDecoder::decodeType123, _types);
+    setMsgCallback(2, &AisDecoder::decodeType123, _types);
+    setMsgCallback(3, &AisDecoder::decodeType123, _types);
+    setMsgCallback(4, &AisDecoder::decodeType411, _types);
+    setMsgCallback(5, &AisDecoder::decodeType5, _types);
+    setMsgCallback(9, &AisDecoder::decodeType9, _types);
+    setMsgCallback(11, &AisDecoder::decodeType411, _types);
+    setMsgCallback(18, &AisDecoder::decodeType18, _types);
+    setMsgCallback(19, &AisDecoder::decodeType19, _types);
+    setMsgCallback(21, &AisDecoder::decodeType21, _types);
+    setMsgCallback(24, &AisDecoder::decodeType24, _types);
+    setMsgCallback(27, &AisDecoder::decodeType27, _types);
 }
 
 /* decode Position Report (class A) */
