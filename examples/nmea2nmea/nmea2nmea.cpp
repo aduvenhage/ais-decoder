@@ -435,7 +435,7 @@ void buildVesselDb(VesselDb &_db, const std::string &_strLogPath)
 int main()
 {
     
-    std::string pathInput = "20170210.log";
+    std::string pathInput = "nmea-sample_rep.txt";
     std::string pathOutput = "filtered_nmea.txt";
 
     VesselDb db;
