@@ -114,7 +114,7 @@ public:
         :m_parser(_parser),
          m_db(_db)
     {
-        // set decoder to decode only type 5s
+        // set decoder to decode only message types that provide vessel type code
         enableMsgTypes({5, 19, 24});
     }
     
@@ -211,16 +211,27 @@ class AisNmeaFilter : public AIS::AisDecoder
     bool allowMessage(unsigned int _uMsgType, unsigned int _uMmsi)
     {
         // NOTE: the message is allowed if any of the rules fire (i.e. OR)
-        if  ( (_uMsgType == m_uTargetMsgType) ||
-              (m_uTargetCountryCode == AIS::mmsi_to_mdi(_uMmsi)) )
+
+        // allow message if type equals target type
+        if  (_uMsgType == m_uTargetMsgType)
         {
             return true;
         }
+        
+        // or, allow message if MDI equals target country code
+        else if ( (m_uTargetCountryCode > 0) &&
+                  (m_uTargetCountryCode == AIS::mmsi_to_mdi(_uMmsi)) )
+        {
+            return true;
+        }
+        
+        // or, allow message if vessel type matches target vessel type
         else if ( (m_uTargetType > 0) &&
                   (m_db.checkVesselType(_uMmsi, m_uTargetType) == true) )
         {
             return true;
         }
+        
         else
         {
             return false;
@@ -387,7 +398,7 @@ void createFilteredFile(const std::string &_strLogPath, const std::string &_strO
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
-    const size_t BLOCK_SIZE = 1024 * 1024 * 4;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 32;
     auto tsInit = UTILS::CLOCK::getClockNow();
 
     // create decoder instance
@@ -414,7 +425,7 @@ void buildVesselDb(VesselDb &_db, const std::string &_strLogPath)
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
-    const size_t BLOCK_SIZE = 1024 * 1024 * 4;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 32;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
     // create decoder instance
@@ -429,22 +440,21 @@ void buildVesselDb(VesselDb &_db, const std::string &_strLogPath)
     printf("rate = %.2f, count = %lu, time = %.2f\n\n\n\n", (float)(decoder.getTotalMessageCount() / dTd), (unsigned long)decoder.getTotalMessageCount(), dTd);
 }
 
+
 /**
  
  */
 int main()
 {
-    
-    std::string pathInput = "nmea-sample_rep.txt";
-    std::string pathOutput = "filtered_nmea.txt";
-
     VesselDb db;
     printf("Building vessel DB... \n");
-    buildVesselDb(db, pathInput);
-    
+    buildVesselDb(db, "5.txt");
+    buildVesselDb(db, "19.txt");
+    buildVesselDb(db, "24.txt");
+
     // NOTE: NMEA is output if any of the rules fire.
     printf("Creating filtered file... \n");
-    createFilteredFile(pathInput, pathOutput, db,
+    createFilteredFile("123.txt", "filtered_nmea.txt", db,
                        0,       // msg type: 0 = ignore
                        0,       // country MDI: 0 = ignore
                        70);     // class code: 0 = ignore
