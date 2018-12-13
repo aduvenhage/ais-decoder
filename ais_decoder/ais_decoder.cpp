@@ -807,7 +807,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         if (checkCrc(strNmea) == true)
         {
             // decode sentence
-            size_t uWordCount = seperate(m_words, strNmea);
+            size_t uWordCount = seperate<','>(m_words, strNmea);
             
             // \todo What AIS talker IDs (words[0]) should we support? For now just allowing all of them..
             bool bValidMsg = (uWordCount >= 7) &&
@@ -872,7 +872,6 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                     // create multi-sentence object with first message
                     else if (iFragmentNum == 1)
                     {
-                        // \todo reuse multi-sentence strings (i.e. do nto re-allocated and reset unique pointers)
                         m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strLine,
                                                                                    _parser.getHeader(strLine, strNmea),
                                                                                    _parser.getFooter(strLine, strNmea));

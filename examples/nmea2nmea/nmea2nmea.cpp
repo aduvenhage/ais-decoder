@@ -192,13 +192,15 @@ class AisNmeaFilter : public AIS::AisDecoder
                   size_t _uFileOutChunkSize,
                   unsigned int _uTargetMsgType,
                   unsigned int _uTargetCountryCode,
-                  unsigned int _uType)
+                  unsigned int _uType,
+                  unsigned int _uSiteId)
         :m_fout(_strOutputPath, _uFileOutChunkSize),
          m_parser(_parser),
          m_db(_db),
          m_uTargetMsgType(_uTargetMsgType),
          m_uTargetCountryCode(_uTargetCountryCode),
-         m_uTargetType(_uType)
+         m_uTargetType(_uType),
+         m_uSiteId(_uSiteId)
     {
         if (_uTargetMsgType > 0)
         {
@@ -211,7 +213,7 @@ class AisNmeaFilter : public AIS::AisDecoder
     bool allowMessage(unsigned int _uMsgType, unsigned int _uMmsi)
     {
         // NOTE: the message is allowed if any of the rules fire (i.e. OR)
-
+        
         // allow message if type equals target type
         if  (_uMsgType == m_uTargetMsgType)
         {
@@ -232,10 +234,26 @@ class AisNmeaFilter : public AIS::AisDecoder
             return true;
         }
         
-        else
+        // or, allow if site (footer word) matches
+        else if (m_uSiteId > 0)
         {
-            return false;
+            std::array<AIS::StringRef, 32> footerWords;
+            size_t n = AIS::seperate<';'>(footerWords, footer());
+            
+            for (size_t i = 0; i < n; i++)
+            {
+                const auto &word = footerWords[i];
+                if (word.empty() == false)
+                {
+                    if (std::strtol(word.data(), nullptr, 10) == m_uSiteId)
+                    {
+                        return true;
+                    }
+                }
+            }
         }
+        
+        return false;
     }
     
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int /*_iRot*/, unsigned int _uSog, bool /*_bPosAccuracy*/, int _iPosLon, int _iPosLat, int _iCog, int /*_iHeading*/) override
@@ -376,6 +394,7 @@ class AisNmeaFilter : public AIS::AisDecoder
     unsigned int                m_uTargetMsgType;
     unsigned int                m_uTargetCountryCode;
     unsigned int                m_uTargetType;
+    unsigned int                m_uSiteId;
 };
 
 
@@ -394,7 +413,8 @@ void progressCb(size_t _uTotalBytes, const AIS::AisDecoder &_decoder)
 void createFilteredFile(const std::string &_strLogPath, const std::string &_strOutputPath, VesselDb &_db,
                         unsigned int _uTargetMsgType,
                         unsigned int _uTargetCountryCode,
-                        unsigned int _uType)
+                        unsigned int _uType,
+                        unsigned int _uSiteId)
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
@@ -407,7 +427,8 @@ void createFilteredFile(const std::string &_strLogPath, const std::string &_strO
                           BLOCK_SIZE,
                           _uTargetMsgType,
                           _uTargetCountryCode,
-                          _uType);
+                          _uType,
+                          _uSiteId);
     
     AIS::processAisFile(strInputFilePath, decoder, parser, BLOCK_SIZE, progressCb);
     
@@ -457,7 +478,8 @@ int main()
     createFilteredFile("123.txt", "filtered_nmea.txt", db,
                        0,       // msg type: 0 = ignore
                        0,       // country MDI: 0 = ignore
-                       70);     // class code: 0 = ignore
+                       0,
+                       56);     // class code: 0 = ignore
     
     return 0;
 }

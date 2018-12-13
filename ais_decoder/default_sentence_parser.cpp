@@ -116,7 +116,7 @@ uint64_t DefaultSentenceParser::getTimestamp(const AIS::StringRef &_strHeader, c
     {
         // seperate header into words
         std::array<AIS::StringRef, 8> words;
-        size_t n = AIS::seperate(words, _strHeader);
+        size_t n = AIS::seperate<','>(words, _strHeader);
         
         // find timestamp
         for (size_t i = 0; i < n; i++)

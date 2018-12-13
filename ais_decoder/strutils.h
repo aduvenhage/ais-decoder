@@ -305,11 +305,11 @@ namespace AIS
     }
     
  	/**
-         Separate input string into words using commas.
+         Separate input string into words using the delimiter.
          The output vector is not resized and this function will not return more words than the size of the output.
          Returns the number of words added to output, starting at index 0.
      */
-    template <typename output_t>
+    template <char CH, typename output_t>
     size_t seperate(output_t &_output, const StringRef &_strInput)
 	{
         const char *pCh = _strInput.data();
@@ -319,7 +319,7 @@ namespace AIS
         while ( (pCh < pChEnd) &&
                 (uWordCount < _output.size()) ) {
                 
-            const char* next =  (const char*)memchr(pCh, ',', pChEnd - pCh);
+            const char* next =  (const char*)memchr(pCh, CH, pChEnd - pCh);
             if (next == nullptr || next > pChEnd) {
                 // no comma found, assume we are in the last word
                 next = pChEnd;
