@@ -11,7 +11,9 @@ The current 'onTypeXX(...)' message callback are unique for each message type (t
 
 The method 'enableMsgTypes(...)' can be used to enable/disable the decoding of specific messages. For example 'enableMsgTypes({1, 5})' will cause only type 1 and type 5 to be decoded internally, which could increase decoding performance, since the decoder will just skip over other message types.  The method takes a list or set of integers, for example '{1, 2, 3}' or '{5}'.
 
-The individual data sentences (per line) may also include meta data before or after the NMEA sentences.  The decoder makes use of a sentence parser class that should be extended by the user to extract the NMEA data from each sentence (see example applications and default_sensor_parser.h).  The meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  For multi-line messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').  The decoder also provides access to the META and raw sentence data as messages are being decoded.  The following methods can be called from inside the 'onMessage()', 'onTypeXX()' or 'onDecodeError()' methods:
+The individual data sentences (per line) may also include meta data before or after the NMEA sentences.  The decoder makes use of a sentence parser class that should be extended by the user to extract the NMEA data from each sentence (see example applications and default_sensor_parser.h).  The meta data is provided as a header and a footer string to the user via one of the pure virtual methods on the decoder interface.  For multi-line messages only the header and footer of the first sentence is reported (reported via 'onMessage(...)').
+
+The decoder also provides access to the META and raw sentence data as messages are being decoded.  The following methods can be called from inside the 'onMessage()', 'onTypeXX()' or 'onDecodeError()' methods:
  - 'header()' returns the extracted META data header
  - 'footer()' returns the extracted META data footer
  - 'payload()' returns the full NMEA payload
@@ -19,7 +21,7 @@ The individual data sentences (per line) may also include meta data before or af
 
 Some time was also spent on improving the speed of the NMEA string processing to see how quickly NMEA logs could be processed.  Currently the multi-threaded file reading examples (running a thread per file) achieve more than 3M NMEA messages per second, per thread.  When running on multiple logs concurrently (8 threads is a good number on modern hardware) 12M+ NMEA messages per second is possible.  During testing it was also found that most of the time was spent on the 6bit nibble packing and unpacking, not the file IO.
 
-SWIG is used to provide Python bindings.
+SWIG is used to provide Python bindings.  And the decoder can also be built and installed through python.
 
 ## Checklist
 - [x] Basic payload 6bit nibble stuffing and unpacking
@@ -56,7 +58,7 @@ This project uses CMAKE to build.  To build through command line on linux, do th
 The project includes some examples of how to use the AIS decoder lib.
 
 
-## Create a python module (WIP)
+## Create a python module
 The module is built around the 'ais_quick' interface. See 'examples/quick'. This project uses [SWIG](http://www.swig.org/) to compile a python module.  The SWIG interface file is located at 'python/ais_decoder.i'.
 
 ### To build and install using 'setuptools'
@@ -88,7 +90,7 @@ On Linux you will have to install the following:
 - 'python-dev' or 'python3-dev' *for Python3*
 - 'python3-distutils' *for Python3*
 
-## Import and use python module (WIP)
+## Import and use python module
 In python, do the following to test:
 
 ```
