@@ -96,14 +96,19 @@ namespace AIS
     /** strip trailing whitespace */
     inline std::string &stripTrailingWhitespace(std::string &_str)
     {
-        while (_str.empty() == false)
+        const char *pStrStart = (const char *)_str.data();
+        const char *pStrEnd = (const char *)_str.data() + _str.size();
+        
+        while (pStrEnd > pStrStart)
         {
-            if (ascii_isspace(_str.back()) == true)
+            if (ascii_isspace(*(--pStrEnd)) == false)
             {
-                _str.pop_back();
-            }
-            else
-            {
+                size_t n = pStrEnd - pStrStart + 1;
+                if (n != _str.size())
+                {
+                    _str.resize(n);
+                }
+                
                 break;
             }
         }

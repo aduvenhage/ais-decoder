@@ -40,9 +40,7 @@ void PayloadBuffer::resetBitIndex()
 unsigned int PayloadBuffer::getUnsignedValue(int _iBits)
 {  
     const unsigned char *lptr = &m_data[m_iBitIndex >> 3];
-    uint64_t bits;
-    
-    bits = (uint64_t)lptr[0] << 40;
+    uint64_t bits = (uint64_t)lptr[0] << 40;
     bits |= (uint64_t)lptr[1] << 32;
     
     if (_iBits > 9) {
@@ -62,9 +60,7 @@ unsigned int PayloadBuffer::getUnsignedValue(int _iBits)
 int PayloadBuffer::getSignedValue(int _iBits)
 {
     const unsigned char *lptr = &m_data[m_iBitIndex >> 3];
-    uint64_t bits;
-
-    bits = (uint64_t)lptr[0] << 40;
+    uint64_t bits = (uint64_t)lptr[0] << 40;
     bits |= (uint64_t)lptr[1] << 32;
     
     if (_iBits > 9) {
@@ -83,19 +79,36 @@ int PayloadBuffer::getSignedValue(int _iBits)
 /* unback string (6 bit characters) -- already cleans string (removes trailing '@' and trailing spaces) */
 std::string PayloadBuffer::getString(int _iNumBits)
 {
-    std::string ret;
+    static thread_local std::array<char, 64> strdata;
+    
     int iNumChars = _iNumBits/6;
-    ret.reserve(iNumChars);
+    if (iNumChars > strdata.size())
+    {
+        iNumChars = strdata.size();
+    }
     
     int32_t iStartBitIndex = m_iBitIndex;
     
     for (int i = 0; i < iNumChars; i++)
     {
-        int ch = getUnsignedValue(6);
-        
+        unsigned int ch = getUnsignedValue(6);
         if (ch > 0) // stop on '@'
         {
-            ret.push_back(ASCII_CHARS[ch & 0x3F]);
+            strdata[i] = ASCII_CHARS[ch];
+        }
+        else
+        {
+            iNumChars = i;
+            break;
+        }
+    }
+    
+    // remove trailing spaces
+    while (iNumChars > 0)
+    {
+        if (ascii_isspace(strdata[iNumChars-1]) == true)
+        {
+            iNumChars--;
         }
         else
         {
@@ -103,13 +116,10 @@ std::string PayloadBuffer::getString(int _iNumBits)
         }
     }
     
-    // remove trailing spaces
-    stripTrailingWhitespace(ret);
-    
     // make sure bit index is correct
     m_iBitIndex = iStartBitIndex + _iNumBits;
     
-    return ret;
+    return std::string(strdata.data(), iNumChars);
 }
 
 /* convert payload to decimal (de-armour) and concatenate 6bit decimal values into payload buffer */
@@ -232,10 +242,12 @@ MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFragment,
      m_iFragmentNum(0),
      m_strHeader(_strHeader),
      m_strFooter(_strFooter),
-     m_vecPayload{_strFragment},
-     m_vecLines{_strLine},
+     m_vecPayload(_iFragmentCount),
+     m_vecLines(_iFragmentCount),
      m_uPayloadSize(0)
 {
+    m_vecPayload[0] = _strFragment;
+    m_vecLines[0] = _strLine;
     m_uPayloadSize += _strFragment.size();
     m_iFragmentNum++;
 }
@@ -243,14 +255,15 @@ MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFragment,
 bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment, const StringRef &_strLine)
 {
     // check that fragments are added in order (out of order is an error)
-    if (m_iFragmentNum == _iFragmentNum-1)
+    if ( (_iFragmentNum <= m_iFragmentCount) &&
+         (m_iFragmentNum == _iFragmentNum-1) )
     {
         // append data
-        m_vecPayload.push_back(_strFragment);
-        m_vecLines.push_back(_strLine);
-        
+        m_vecPayload[_iFragmentNum-1] = _strFragment;
+        m_vecLines[_iFragmentNum-1] = _strLine;
         m_uPayloadSize += _strFragment.size();
         m_iFragmentNum++;
+        
         return true;
     }
     else
@@ -859,6 +872,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                     // create multi-sentence object with first message
                     else if (iFragmentNum == 1)
                     {
+                        // \todo reuse multi-sentence strings (i.e. do nto re-allocated and reset unique pointers)
                         m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strLine,
                                                                                    _parser.getHeader(strLine, strNmea),
                                                                                    _parser.getFooter(strLine, strNmea));

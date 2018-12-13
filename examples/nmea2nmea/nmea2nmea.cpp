@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <stdio.h>
-#include <map>
+#include <unordered_map>
 #include <set>
 
 
@@ -95,7 +95,7 @@ struct VesselDb
         return m_mapMmsi2Type[_uMmsi].count(_uType) > 0;
     }
     
-    std::map<unsigned int, std::set<unsigned int>>       m_mapMmsi2Type;
+    std::unordered_map<unsigned int, std::set<unsigned int>>       m_mapMmsi2Type;
 };
 
 
@@ -398,7 +398,7 @@ void createFilteredFile(const std::string &_strLogPath, const std::string &_strO
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
-    const size_t BLOCK_SIZE = 1024 * 1024 * 32;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 16;
     auto tsInit = UTILS::CLOCK::getClockNow();
 
     // create decoder instance
@@ -425,7 +425,7 @@ void buildVesselDb(VesselDb &_db, const std::string &_strLogPath)
 {
     // NOTE: EXAMPLE_DATA_PATH is defined by cmake script to be absolute path to source/data folder
     auto strInputFilePath = std::string(EXAMPLE_DATA_PATH) + "/" + _strLogPath;
-    const size_t BLOCK_SIZE = 1024 * 1024 * 32;
+    const size_t BLOCK_SIZE = 1024 * 1024 * 16;
     auto tsInit = UTILS::CLOCK::getClockNow();
     
     // create decoder instance
