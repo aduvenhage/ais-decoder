@@ -82,9 +82,9 @@ std::string PayloadBuffer::getString(int _iNumBits)
     static thread_local std::array<char, 64> strdata;
     
     int iNumChars = _iNumBits/6;
-    if (iNumChars > strdata.size())
+    if (iNumChars > (int)strdata.size())
     {
-        iNumChars = strdata.size();
+        iNumChars = (int)strdata.size();
     }
     
     int32_t iStartBitIndex = m_iBitIndex;
