@@ -38,6 +38,9 @@ SWIG is used to provide Python bindings.  And the decoder can also be built and 
 - [x] Investigate faster ascii de-armouring and bit packing techniques (thanks to Frans van den Bergh)
 - [x] Add python interface
 - [x] Support NMEA files/data with non-standard meta data, timestamp data, etc.
+- [x] Improve multi-line performance (currently copying data, which is slow)
+- [x] Add support for custom sentence headers and footers (meta data)
+- [x] Allow for NMEA-to-NMEA filtering by storing and providing access to source sentences with each decoded message
 
 - [ ] Validate talker IDs
 - [ ] Look at multiple threads/decoders working on the same file, for very large files
