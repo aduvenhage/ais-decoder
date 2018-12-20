@@ -132,7 +132,8 @@ uint64_t DefaultSentenceParser::getTimestamp(const AIS::StringRef &_strHeader, c
     
     // try to get timestamp from footer
     // NOTE: assumes footer first word as timestamp
-    if (_strFooter.empty() == false)
+    if ( (_strFooter.empty() == false) &&
+         (uTimestamp == 0) )
     {
         uTimestamp = (uint64_t)std::strtoull(_strFooter.data()+1, nullptr, 10);
     }
