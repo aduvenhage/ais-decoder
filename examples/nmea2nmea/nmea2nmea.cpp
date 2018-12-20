@@ -181,6 +181,7 @@ private:
  - the VesselDB container is a standard map and set combination that could be improved on
  - the filtering method 'allowMessage(...)' and this class only allows for filtering of single values
    (typically you would like to check for sets of values)
+ - site ID is assumed to be the comma seperated values in the string footers
  
  NOTE: NMEA is output if any of the rules fire.
  
@@ -478,8 +479,8 @@ int main()
     createFilteredFile("123.txt", "filtered_nmea.txt", db,
                        0,       // msg type: 0 = ignore
                        0,       // country MDI: 0 = ignore
-                       0,
-                       56);     // class code: 0 = ignore
+                       0,       // class code: 0 = ignore
+                       56);     // site ID to filter on -- assumes site IDs are container in footer (comma separated)
     
     return 0;
 }
