@@ -92,12 +92,12 @@ IF(MSVC)
 
 ELSE(MSVC)
     IF(MACX)
-        SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -std=c++14 -DNDEBUG ")
-        SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -std=c++14 -DDEBUG")
+        SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O2 -Wall -std=c++17 -DNDEBUG ")
+        SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -Wall -std=c++17 -DDEBUG")
 
     ELSE(MACX)
-        SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++14 -Wall -Wno-unknown-pragmas -DNDEBUG")
-        SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -std=c++14 -Wall -Wno-unknown-pragmas -DDEBUG -rdynamic")
+        SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -std=c++17 -Wall -Wno-unknown-pragmas -DNDEBUG")
+        SET(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -O0 -std=c++17 -Wall -Wno-unknown-pragmas -DDEBUG -rdynamic")
     ENDIF(MACX)
 
 ENDIF(MSVC)

@@ -32,51 +32,6 @@
 
 
 
-/// output file with buffering
-class BufferedFileOut
-{
- public:
-    BufferedFileOut(const std::string &_strPath, size_t _uBlockSize)
-        :m_pFileOut(nullptr),
-         m_buffer(_uBlockSize),
-         m_uBlockSize(_uBlockSize)
-    {
-        m_pFileOut = fopen(_strPath.c_str(), "wb");
-    }
-    
-    ~BufferedFileOut()
-    {
-        flush();
-        fclose(m_pFileOut);
-    }
-    
-    void append(const AIS::StringRef &_str)
-    {
-        m_buffer.append(_str.data(), _str.size());
-        
-        if (m_buffer.size() >= m_uBlockSize)
-        {
-            flush();
-        }
-    }
-    
-    void flush()
-    {
-        if (m_pFileOut != nullptr)
-        {
-            fwrite(m_buffer.data(), 1, m_buffer.size(), m_pFileOut);
-            m_buffer.clear();
-        }
-    }
-    
- private:
-    FILE            *m_pFileOut;
-    AIS::Buffer     m_buffer;
-    size_t          m_uBlockSize;
-};
-
-
-
 /**
  Vessel info lookup (DB indexed by MMSI).
  
@@ -109,16 +64,15 @@ struct VesselDb
  */
 class AisType5Db : public AIS::AisDecoder
 {
-public:
-    AisType5Db(VesselDb &_db, const AIS::SentenceParser &_parser)
-        :m_parser(_parser),
-         m_db(_db)
+ public:
+    AisType5Db(VesselDb &_db)
+        :m_db(_db)
     {
         // set decoder to decode only message types that provide vessel type code
         enableMsgTypes({5, 19, 24});
     }
     
-protected:
+ protected:
     virtual void onType123(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uNavstatus, int /*_iRot*/, unsigned int _uSog, bool /*_bPosAccuracy*/, int _iPosLon, int _iPosLat, int _iCog, int /*_iHeading*/) override {}
     
     virtual void onType411(unsigned int _uMsgType, unsigned int _uMmsi, unsigned int _uYear, unsigned int _uMonth, unsigned int _uDay, unsigned int _uHour, unsigned int _uMinute, unsigned int _uSecond,
@@ -167,7 +121,6 @@ protected:
     virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {}
     
 private:
-    const AIS::SentenceParser   &m_parser;          ///< sentence parser being used
     VesselDb                    &m_db;
 };
 
@@ -189,14 +142,13 @@ private:
 class AisNmeaFilter : public AIS::AisDecoder
 {
  public:
-    AisNmeaFilter(const std::string &_strOutputPath, const AIS::SentenceParser &_parser, VesselDb &_db,
+    AisNmeaFilter(const std::string &_strOutputPath, VesselDb &_db,
                   size_t _uFileOutChunkSize,
                   unsigned int _uTargetMsgType,
                   unsigned int _uTargetCountryCode,
                   unsigned int _uType,
                   unsigned int _uSiteId)
         :m_fout(_strOutputPath, _uFileOutChunkSize),
-         m_parser(_parser),
          m_db(_db),
          m_uTargetMsgType(_uTargetMsgType),
          m_uTargetCountryCode(_uTargetCountryCode),
@@ -384,13 +336,12 @@ class AisNmeaFilter : public AIS::AisDecoder
     virtual void onNotDecoded(const AIS::StringRef &_strPayload, int _iMsgType) override {}
     
     virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
-        std::string msg = _strMessage;
+        std::string msg(_strMessage.data(), _strMessage.size());
         printf("%s [%s]\n", _strError.c_str(), msg.c_str());
     }
     
  private:
-    BufferedFileOut             m_fout;             ///< NMEA output file
-    const AIS::SentenceParser   &m_parser;          ///< sentence parser being used
+    AIS::BufferedFileOut        m_fout;             ///< NMEA output file
     VesselDb                    &m_db;
     unsigned int                m_uTargetMsgType;
     unsigned int                m_uTargetCountryCode;
@@ -424,7 +375,7 @@ void createFilteredFile(const std::string &_strLogPath, const std::string &_strO
 
     // create decoder instance
     AIS::DefaultSentenceParser parser;
-    AisNmeaFilter decoder(std::string(EXAMPLE_DATA_PATH) + "/" + _strOutputPath, parser, _db,
+    AisNmeaFilter decoder(std::string(EXAMPLE_DATA_PATH) + "/" + _strOutputPath, _db,
                           BLOCK_SIZE,
                           _uTargetMsgType,
                           _uTargetCountryCode,
@@ -452,7 +403,7 @@ void buildVesselDb(VesselDb &_db, const std::string &_strLogPath)
     
     // create decoder instance
     AIS::DefaultSentenceParser parser;
-    AisType5Db decoder(_db, parser);
+    AisType5Db decoder(_db);
     
     AIS::processAisFile(strInputFilePath, decoder, parser, BLOCK_SIZE, progressCb);
     

@@ -36,6 +36,7 @@ namespace AIS
     }
     
     
+    
     /**
      Read and process a file in blocks of _uBlockSize, using the provided decoder.
      
@@ -81,6 +82,54 @@ namespace AIS
             throw std::runtime_error("Failed to open file '" + _strLogPath + "' for reading!");
         }
     }
+
+    
+    
+    /**
+        Output file with buffering.
+     */
+    class BufferedFileOut
+    {
+    public:
+        BufferedFileOut(const std::string &_strPath, size_t _uBlockSize)
+        :m_pFileOut(nullptr),
+        m_buffer(_uBlockSize),
+        m_uBlockSize(_uBlockSize)
+        {
+            m_pFileOut = fopen(_strPath.c_str(), "wb");
+        }
+        
+        ~BufferedFileOut()
+        {
+            flush();
+            fclose(m_pFileOut);
+        }
+        
+        void append(const AIS::StringRef &_str)
+        {
+            m_buffer.append(_str.data(), _str.size());
+            
+            if (m_buffer.size() >= m_uBlockSize)
+            {
+                flush();
+            }
+        }
+        
+        void flush()
+        {
+            if (m_pFileOut != nullptr)
+            {
+                fwrite(m_buffer.data(), 1, m_buffer.size(), m_pFileOut);
+                m_buffer.clear();
+            }
+        }
+        
+    private:
+        FILE            *m_pFileOut;
+        AIS::Buffer     m_buffer;
+        size_t          m_uBlockSize;
+    };
+    
 
 };	// namespace AIS
 

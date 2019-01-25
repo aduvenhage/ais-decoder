@@ -309,20 +309,20 @@ void MultiSentence::backupData()
     // cleanup buffer
     m_backup.pop_front(uOffset);
     
-    // update string references
-    m_strHeader.m_psRef = m_backup.data();
-    m_strFooter.m_psRef = m_backup.data() + m_strHeader.size();
+    // re-base string references
+    m_strHeader = StringRef(m_backup.data(), m_strHeader.size());
+    m_strFooter = StringRef(m_backup.data() + m_strHeader.size(), m_strFooter.size());
     
     uOffset = m_strHeader.size() + m_strFooter.size();
     for (auto &str : m_vecPayload)
     {
-        str.m_psRef = m_backup.data() + uOffset;
+        str = StringRef(m_backup.data() + uOffset, str.size());
         uOffset += str.size();
     }
     
     for (auto &str : m_vecLines)
     {
-        str.m_psRef = m_backup.data() + uOffset;
+        str = StringRef(m_backup.data() + uOffset, str.size());
         uOffset += str.size();
     }
 }
@@ -791,9 +791,9 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
     if (n > 0)
     {
         // clear user data
-        m_strHeader.clear();
-        m_strFooter.clear();
-        m_strPayload.clear();
+        m_strHeader = StringRef();
+        m_strFooter = StringRef();
+        m_strPayload = StringRef();
         m_vecSentences.clear();
 
         // provide raw data back to user

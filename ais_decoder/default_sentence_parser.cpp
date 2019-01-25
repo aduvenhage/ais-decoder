@@ -52,21 +52,20 @@ StringRef DefaultSentenceParser::getHeader(const StringRef &_strLine, const Stri
     
     if (_strNmea.data() > _strLine.data())
     {
-        strHeader = _strLine.sub(0, _strNmea.data() - _strLine.data());
+        strHeader = _strLine.substr(0, _strNmea.data() - _strLine.data());
         
         // remove last '\'
         if ( (strHeader.empty() == false) &&
              (strHeader[strHeader.size() - 1] == '\\') )
         {
-            strHeader.m_uSize--;
+            strHeader.remove_suffix(1);
         }
         
         // remove first '\\'
         if ( (strHeader.empty() == false) &&
              (strHeader[0] == '\\') )
         {
-            strHeader.m_psRef++;
-            strHeader.m_uSize--;
+            strHeader.remove_prefix(1);
         }
     }
     
@@ -90,15 +89,14 @@ StringRef DefaultSentenceParser::getFooter(const StringRef &_strLine, const Stri
         if ( (strFooter.empty() == false) &&
              (strFooter[strFooter.size() - 1] == '\r') )
         {
-            strFooter.m_uSize--;
+            strFooter.remove_suffix(1);
         }
         
         // remove first ','
         if ( (strFooter.empty() == false) &&
              (strFooter[0] == ',') )
         {
-            strFooter.m_psRef++;
-            strFooter.m_uSize--;
+            strFooter.remove_prefix(1);
         }
     }
     

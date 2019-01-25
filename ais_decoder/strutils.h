@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>
+#include <string_view>
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -127,71 +128,9 @@ namespace AIS
     
     
     /// quick string object that just references data from another buffer
-    struct StringRef
-    {
-        static const size_t npos = (size_t)-1;	// npos
-        
-        StringRef()
-            :m_psRef(nullptr),
-             m_uSize(0)
-        {}
-        
-        StringRef(const char *_psRef, size_t _uSize)
-            :m_psRef(_psRef),
-             m_uSize(_uSize)
-        {}
-        
-        const char *data() const {return m_psRef;}
-        
-        char operator [] (size_t _i) const {
-            if (_i < m_uSize) {
-                return m_psRef[_i];
-            }
-            else {
-                return 0;
-            }
-        }
-
-        size_t size() const {return m_uSize;}
-        bool empty() const {return m_uSize == 0;}
-        void clear() {m_psRef = nullptr; m_uSize = 0;}
-        
-        const char *begin() const {return m_psRef;}
-        const char *end() const {return m_psRef + m_uSize;}
-        
-        void assign(const char *_psRef, size_t _uSize) {m_psRef = _psRef; m_uSize = _uSize;}
-        
-        operator std::string () const {
-            if (m_uSize > 0) {
-                return std::string(m_psRef, m_psRef + m_uSize);
-            }
-            else {
-                return "";
-            }
-        }
-        
-        StringRef sub(size_t _i, size_t _n = npos) const {
-            
-            if ( (_n > 0) &&
-                 (_i < m_uSize) )
-            {
-                if (_i + _n > m_uSize)
-                {
-                    return StringRef(m_psRef + _i, m_uSize - _i);
-                }
-                else
-                {
-                    return StringRef(m_psRef + _i, _n - _i);
-                }
-            }
-            
-            return StringRef();
-        }
-
-        const char        *m_psRef;
-        size_t            m_uSize;
-    };
-
+    using StringRef = std::string_view;
+    
+    
     
     /**
      Lightweight buffer for processing data chunks.
@@ -297,8 +236,7 @@ namespace AIS
         } else {
             // \note getLine() output includes <CR> and <LF> chars
             int nb = (int)(next - pData + 1);
-            _strOutput.m_psRef = pData;
-            _strOutput.m_uSize = nb;
+            _strOutput = StringRef(pData, nb);
             
             return nb;
         }
@@ -325,7 +263,7 @@ namespace AIS
                 next = pChEnd;
             }
             
-            _output[uWordCount].assign(pCh, next - pCh);
+            _output[uWordCount] = StringRef(pCh, next - pCh);
             uWordCount++;
 
             pCh = next + 1; // continue after comma

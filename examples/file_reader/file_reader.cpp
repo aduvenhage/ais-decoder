@@ -44,8 +44,7 @@ class AisDummyDecoder : public AIS::AisDecoder
  protected:
     virtual void onType123(unsigned int , unsigned int , unsigned int , int , unsigned int , bool , int , int , int , int ) override {}
     
-    virtual void onType411(unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int ,
-                           bool , int , int ) override {}
+    virtual void onType411(unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , bool , int , int ) override {}
     
     virtual void onType5(unsigned int , unsigned int , const std::string &, const std::string &,
                          unsigned int , unsigned int , unsigned int , unsigned int , unsigned int , unsigned int ,
@@ -56,12 +55,9 @@ class AisDummyDecoder : public AIS::AisDecoder
     
     virtual void onType18(unsigned int , unsigned int , bool , int , int , int , int ) override {}
     
-    virtual void onType19(unsigned int , unsigned int , bool , int , int , int , int ,
-                          const std::string &, unsigned int ,
-                          unsigned int , unsigned int , unsigned int , unsigned int ) override {}
+    virtual void onType19(unsigned int , unsigned int , bool , int , int , int , int , const std::string &, unsigned int , unsigned int , unsigned int , unsigned int , unsigned int ) override {}
     
-    virtual void onType21(unsigned int , unsigned int , const std::string &, bool , int , int ,
-                          unsigned int , unsigned int , unsigned int , unsigned int ) override {}
+    virtual void onType21(unsigned int , unsigned int , const std::string &, bool , int , int , unsigned int , unsigned int , unsigned int , unsigned int ) override {}
     
     virtual void onType24A(unsigned int , const std::string &) override {}
     
@@ -71,13 +67,12 @@ class AisDummyDecoder : public AIS::AisDecoder
     
     virtual void onSentence(const AIS::StringRef &) override {}
     
-    virtual void onMessage(const AIS::StringRef &,
-                           const AIS::StringRef &, const AIS::StringRef &) override {}
+    virtual void onMessage(const AIS::StringRef &, const AIS::StringRef &, const AIS::StringRef &) override {}
     
     virtual void onNotDecoded(const AIS::StringRef &, int ) override {}
     
     virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
-        std::string msg = _strMessage;
+        std::string msg(_strMessage.data(), _strMessage.size());
         printf("%s [%s]\n", _strError.c_str(), msg.c_str());
     }
 };
