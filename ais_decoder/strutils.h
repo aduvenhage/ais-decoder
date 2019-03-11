@@ -7,7 +7,6 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string>
-#include <string_view>
 #include <algorithm>
 #include <vector>
 #include <memory>
@@ -128,7 +127,81 @@ namespace AIS
     
     
     /// quick string object that just references data from another buffer
-    using StringRef = std::string_view;
+    #if __has_include(<string_view>)
+//        #include <string_view>
+//        using StringRef = std::string_view;
+    
+//    #else
+    
+        class StringRef
+        {
+         public:
+            static const size_t npos = size_t(-1);
+            
+         public:
+            StringRef()
+                :m_pData(nullptr),
+                 m_uSize(0)
+            {}
+            
+            StringRef(const char *_pData, size_t _uSize)
+                :m_pData(_pData),
+                 m_uSize(_uSize)
+            {}
+            
+            const char *data() const {return m_pData;}
+            size_t size() const {return m_uSize;}
+            bool empty() const {return m_uSize == 0;}
+            
+            StringRef substr(size_t _pos = 0, size_t _count = npos) const {
+                StringRef ret;
+                
+                if ( (_count == npos) &&
+                     (_pos < m_uSize) ) {
+                    ret.m_pData = m_pData + _pos;
+                    ret.m_uSize = m_uSize - _pos;
+                }
+                else if (_pos + _count < m_uSize) {
+                    ret.m_pData = m_pData + _pos;
+                    ret.m_uSize = _count;
+                }
+                
+                return ret;
+            }
+            
+            const char operator [] (size_t _i) const {
+                return m_pData[_i];
+            }
+            
+            void remove_prefix(size_t _n) {
+                if (_n < m_uSize) {
+                    m_pData += _n;
+                    m_uSize -= _n;
+                }
+                else {
+                    m_pData += m_uSize;
+                    m_uSize = 0;
+                }
+            }
+            
+            void remove_suffix(size_t _n) {
+                if (_n < m_uSize) {
+                    m_uSize -= _n;
+                }
+                else {
+                    m_uSize = 0;
+                }
+            }
+            
+            operator std::string () const {
+                return std::string(m_pData, m_uSize);
+            }
+            
+         private:
+            const char  *m_pData;
+            size_t      m_uSize;
+        };
+    #endif
     
     
     

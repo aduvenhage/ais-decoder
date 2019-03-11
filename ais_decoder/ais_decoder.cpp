@@ -348,7 +348,7 @@ AisDecoder::AisDecoder(int _iIndex)
 void AisDecoder::setMsgCallback(int _iType, pfnMsgCallback _pfnCb, bool _bEnabled)
 {
     if ( (_iType >= 0) &&
-         (_iType < m_vecMsgCallbacks.size()) )
+         (_iType < (int)m_vecMsgCallbacks.size()) )
     {
         if (_bEnabled == true)
         {
