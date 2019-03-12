@@ -126,13 +126,16 @@ namespace AIS
     
     
     
-    /// quick string object that just references data from another buffer
     #if __has_include(<string_view>)
-//        #include <string_view>
-//        using StringRef = std::string_view;
+        #include <string_view>
+        /// string view that just references data from another buffer
+        using StringRef = std::string_view;
     
-//    #else
-    
+    #else
+        /**
+         String view that just references data from another buffer.
+         Minimum string view implementation to work with pre-c++17 STL.
+         */
         class StringRef
         {
          public:
