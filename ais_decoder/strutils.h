@@ -130,7 +130,6 @@ namespace AIS
         #include <string_view>
         /// string view that just references data from another buffer
         using StringRef = std::string_view;
-    
     #else
         /**
          String view that just references data from another buffer.
@@ -138,6 +137,7 @@ namespace AIS
          */
         class StringRef
         {
+            kkk
          public:
             static const size_t npos = size_t(-1);
             
