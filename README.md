@@ -100,7 +100,7 @@ In python, do the following to test:
 import ais_decoder
 
 str = "!AIVDM,1,1,,A,13HOI:0P0000VOHLCnHQKwvL05Ip,0*23\n"
-ais_decoder.pushAisSentence(str, len(str), 0)
+ais_decoder.pushAisSentence(str, len(str))
 
 n = ais_decoder.numAisMessages()
 msg = ais_decoder.popAisMessage().asdict()
