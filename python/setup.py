@@ -9,7 +9,7 @@ print("===============================================")
 print("Building and installing C++ AIS Decoder Library")
 print("===============================================")
 
-call(["cmake", "../", "-DCMAKE_BUILD_TYPE=RELEASE"])
+call(["cmake", "../", "-DCMAKE_BUILD_TYPE=DEBUG"])
 call(["make"])
 call(["make", "install"])
 

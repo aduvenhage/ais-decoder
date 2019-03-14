@@ -302,16 +302,23 @@ namespace AIS
     {
         const size_t n = _uInputSize - _uOffset;
         const char *pData = _pInput + _uOffset;
+        const char *pSentinel = pData + n;
 
         // find NL/LF
-        const char* sentinel = pData + n;
-        const char* next = (const char*)memchr(pData, '\n', n);
+        const char *next = (const char*)memchr(pData, '\n', n);
         
-        if (next == nullptr || next >= sentinel) {
+        if (next == nullptr || next >= pSentinel) {
             return 0;
         } else {
             // \note getLine() output includes <CR> and <LF> chars
             int nb = (int)(next - pData + 1);
+            
+            // scan past broken line seperator pairs
+            while (*pData == '\r') {
+                pData++;
+            }
+            
+            // create output
             _strOutput = StringRef(pData, nb);
             
             return nb;

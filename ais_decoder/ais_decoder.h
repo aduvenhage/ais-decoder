@@ -282,6 +282,9 @@ namespace AIS
         /// check sentence CRC
         bool checkCrc(const StringRef &_strPayload);
         
+        /// check talker id
+        bool checkTalkerId(const StringRef &_strTalkerId);
+        
         /// decode Mobile AIS station message
         void decodeMobileAisMsg(const StringRef &_strPayload, int _iFillBits);
         

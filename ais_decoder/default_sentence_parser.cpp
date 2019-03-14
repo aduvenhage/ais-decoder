@@ -2,6 +2,7 @@
 #include "default_sentence_parser.h"
 
 #include <array>
+#include <cstring>
 
 
 using namespace AIS;
@@ -34,12 +35,23 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
             uPayloadSize = 0;
         }
     }
-    
-    // find payload size (using crc '*' plus 2 chars for crc value)
-    pCh = (const char*)memchr(pPayloadStart, '*', uPayloadSize);
-    if (pCh != nullptr)
+    else if (std::strncmp(pCh, "$P", 2) == 0)
     {
-        uPayloadSize = pCh + 3 - pPayloadStart;
+        uPayloadSize = 0;
+    }
+
+    // find payload size (using crc '*' plus 2 chars for crc value)
+    if (uPayloadSize > 0)
+    {
+        pCh = (const char*)memchr(pPayloadStart, '*', uPayloadSize);
+        if (pCh != nullptr)
+        {
+            uPayloadSize = pCh + 3 - pPayloadStart;
+        }
+        else
+        {
+            uPayloadSize = 0;
+        }
     }
     
     return StringRef(pPayloadStart, uPayloadSize);

@@ -779,6 +779,25 @@ bool AisDecoder::checkCrc(const StringRef &_strPayload)
     return false;
 }
 
+/* check talker id */
+bool AisDecoder::checkTalkerId(const StringRef &_strTalkerId)
+{
+    if (_strTalkerId.size() > 2)
+    {
+        char chA = _strTalkerId.data()[0];
+        if (chA == '!')
+        {
+            chA = _strTalkerId.data()[1];
+        }
+        
+        return (chA == 'A') || (chA == 'B');
+    }
+    else
+    {
+        return false;
+    }
+}
+
 /*
  Decode next sentence (starts reading from input buffer with the specified offset; returns the number of bytes processed, or 0 when no more messages can be decoded).
  Has to be called until it returns 0, to ensure that any buffered multi-line strings are backed up properly.
@@ -788,7 +807,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
     // process and decode AIS strings
     StringRef strLine;
     size_t n = getLine(strLine, _pNmeaBuffer, _uBufferSize, _uOffset);
-    if (n > 0)
+    if (strLine.size() > 2)      // ignore empty lines
     {
         // clear user data
         m_strHeader = StringRef();
@@ -802,121 +821,129 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         // pull out NMEA sentence
         // NOTE: META header and footer will be calculated from position and size of NMEA sentence within last line
         auto strNmea = _parser.onScanForNmea(strLine);
-        
-        // check sentence CRC
-        if (checkCrc(strNmea) == true)
+        if (strNmea.empty() == false)
         {
-            // decode sentence
-            size_t uWordCount = seperate<','>(m_words, strNmea);
-            
-            // \todo What AIS talker IDs (words[0]) should we support? For now just allowing all of them..
-            bool bValidMsg = (uWordCount >= 7) &&
-                             (m_words[5].size() > 1) &&
-                             (m_words[5].size() <= MAX_MSG_PAYLOAD_LENGTH);
-            
-            // try to decode sentence
-            if (bValidMsg == true)
+            // check sentence CRC
+            if (checkCrc(strNmea) == true)
             {
-                int iFragmentCount = single_digit_strtoi(m_words[1]);
-                int iFillBits = single_digit_strtoi(m_words[6]);
-
-                // check for valid sentence
-                if ( (iFragmentCount == 0) || (iFragmentCount > MAX_MSG_FRAGMENTS) )
-                {
-                    m_uDecodingErrors++;
-                    onDecodeError(strNmea, "Invalid fragment count value (" + std::to_string(iFragmentCount) + ").");
-                }
-                    
-                // decode simple sentence
-                else if (iFragmentCount == 1)
-                {
-                    // setup user data
-                    m_strHeader = _parser.getHeader(strLine, strNmea);
-                    m_strFooter = _parser.getFooter(strLine, strNmea);
-                    m_strPayload = m_words[5];
-                    m_vecSentences.push_back(strLine);
-                    
-                    try
-                    {
-                        // NOTE: the order of the callbacks is important (supply RAW/META info first then decode message)
-                        onMessage(m_strPayload, m_strHeader, m_strFooter);
-                        decodeMobileAisMsg(m_strPayload, iFillBits);
-                    }
-                    catch (std::exception &ex)
-                    {
-                        m_uDecodingErrors++;
-                        onDecodeError(m_strPayload, ex.what());
-                    }
-                }
+                // decode sentence
+                size_t uWordCount = seperate<','>(m_words, strNmea);
+                bool bValidMsg = (checkTalkerId(m_words[0]) == true) &&
+                                 (uWordCount >= 7) &&
+                                 (m_words[5].size() > 1) &&
+                                 (m_words[5].size() <= MAX_MSG_PAYLOAD_LENGTH);
                 
-                // build up multi-sentence payloads
-                else // if (iFragmentCount > 1)
+                // try to decode sentence
+                if (bValidMsg == true)
                 {
-                    int iMsgId = strtoi(m_words[3]);
-                    int iFragmentNum = single_digit_strtoi(m_words[2]);
+                    int iFragmentCount = single_digit_strtoi(m_words[1]);
+                    int iFillBits = single_digit_strtoi(m_words[6]);
 
-                    // check for valid message
-                    if (iMsgId >= (int)m_multiSentences.size())
+                    // check for valid sentence
+                    if ( (iFragmentCount == 0) || (iFragmentCount > MAX_MSG_FRAGMENTS) )
                     {
                         m_uDecodingErrors++;
-                        onDecodeError(strNmea, "Invalid message sequence id (" + std::to_string(iMsgId) + ").");
+                        onDecodeError(strNmea, "Invalid fragment count value (" + std::to_string(iFragmentCount) + ").");
                     }
                     
-                    // check for valid message
-                    else if ( (iFragmentNum == 0) || (iFragmentNum > iFragmentCount) )
+                    // decode simple sentence
+                    else if (iFragmentCount == 1)
                     {
-                        m_uDecodingErrors++;
-                        onDecodeError(strNmea, "Invalid message fragment number (" + std::to_string(iFragmentNum) + ").");
-                    }
-                    
-                    // create multi-sentence object with first message
-                    else if (iFragmentNum == 1)
-                    {
-                        m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strLine,
-                                                                                   _parser.getHeader(strLine, strNmea),
-                                                                                   _parser.getFooter(strLine, strNmea));
-                    }
-                    
-                    // update multi-sentence object with more fragments
-                    else
-                    {
-                        // add to existing payload
-                        auto &pMultiSentence = m_multiSentences[iMsgId];
-                        if (pMultiSentence != nullptr)
+                        // setup user data
+                        m_strHeader = _parser.getHeader(strLine, strNmea);
+                        m_strFooter = _parser.getFooter(strLine, strNmea);
+                        m_strPayload = m_words[5];
+                        m_vecSentences.push_back(strLine);
+                        
+                        try
                         {
-                            // add new fragment and check for any message payload/fragment errors
-                            bool bSuccess = pMultiSentence->addFragment(iFragmentNum, m_words[5], strLine);
-                            
-                            if (bSuccess == true)
+                            // NOTE: the order of the callbacks is important (supply RAW/META info first then decode message)
+                            onMessage(m_strPayload, m_strHeader, m_strFooter);
+                            decodeMobileAisMsg(m_strPayload, iFillBits);
+                        }
+                        catch (std::exception &ex)
+                        {
+                            m_uDecodingErrors++;
+                            onDecodeError(m_strPayload, ex.what());
+                        }
+                    }
+                    
+                    // build up multi-sentence payloads
+                    else // if (iFragmentCount > 1)
+                    {
+                        int iMsgId = strtoi(m_words[3]);
+                        int iFragmentNum = single_digit_strtoi(m_words[2]);
+
+                        // check for valid message
+                        if (iMsgId >= (int)m_multiSentences.size())
+                        {
+                            m_uDecodingErrors++;
+                            onDecodeError(strNmea, "Invalid message sequence id (" + std::to_string(iMsgId) + ").");
+                        }
+                        
+                        // check for valid message
+                        else if ( (iFragmentNum == 0) || (iFragmentNum > iFragmentCount) )
+                        {
+                            m_uDecodingErrors++;
+                            onDecodeError(strNmea, "Invalid message fragment number (" + std::to_string(iFragmentNum) + ").");
+                        }
+                        
+                        // create multi-sentence object with first message
+                        else if (iFragmentNum == 1)
+                        {
+                            m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strLine,
+                                                                                       _parser.getHeader(strLine, strNmea),
+                                                                                       _parser.getFooter(strLine, strNmea));
+                        }
+                        
+                        // update multi-sentence object with more fragments
+                        else
+                        {
+                            // add to existing payload
+                            auto &pMultiSentence = m_multiSentences[iMsgId];
+                            if (pMultiSentence != nullptr)
                             {
-                                // check if all fragments have been received
-                                if (pMultiSentence->isComplete() == true)
+                                // add new fragment and check for any message payload/fragment errors
+                                bool bSuccess = pMultiSentence->addFragment(iFragmentNum, m_words[5], strLine);
+                                
+                                if (bSuccess == true)
                                 {
-                                    // join payload fragments
-                                    pMultiSentence->payload(m_fragmentBuffer);
-
-                                    // setup user data
-                                    m_strHeader = pMultiSentence->header();
-                                    m_strFooter = pMultiSentence->footer();
-                                    m_vecSentences = pMultiSentence->sentences();
-                                    m_strPayload = StringRef(m_fragmentBuffer.data(), m_fragmentBuffer.size());
-
-                                    // decode whole payload and reset
-                                    try
+                                    // check if all fragments have been received
+                                    if (pMultiSentence->isComplete() == true)
                                     {
-                                        // NOTE: the order of the callbacks is important (supply RAW/META info first, then decode message)
-                                        // NOTE: only uses META info of first line for multi-line messages
-                                        onMessage(m_strPayload, m_strHeader, m_strFooter);
-                                        decodeMobileAisMsg(m_strPayload, iFillBits);
+                                        // join payload fragments
+                                        pMultiSentence->payload(m_fragmentBuffer);
+
+                                        // setup user data
+                                        m_strHeader = pMultiSentence->header();
+                                        m_strFooter = pMultiSentence->footer();
+                                        m_vecSentences = pMultiSentence->sentences();
+                                        m_strPayload = StringRef(m_fragmentBuffer.data(), m_fragmentBuffer.size());
+
+                                        // decode whole payload and reset
+                                        try
+                                        {
+                                            // NOTE: the order of the callbacks is important (supply RAW/META info first, then decode message)
+                                            // NOTE: only uses META info of first line for multi-line messages
+                                            onMessage(m_strPayload, m_strHeader, m_strFooter);
+                                            decodeMobileAisMsg(m_strPayload, iFillBits);
+                                        }
+                                        catch (std::exception &ex)
+                                        {
+                                            m_uDecodingErrors++;
+                                            onDecodeError(m_strPayload, ex.what());
+                                        }
+                                        
+                                        // cleanup
+                                        m_multiSentences[iMsgId] = nullptr;
                                     }
-                                    catch (std::exception &ex)
-                                    {
-                                        m_uDecodingErrors++;
-                                        onDecodeError(m_strPayload, ex.what());
-                                    }
-                                    
-                                    // cleanup
+                                }
+                                else
+                                {
+                                    // sentence error, so just reset
+                                    m_uDecodingErrors++;
                                     m_multiSentences[iMsgId] = nullptr;
+                                    onDecodeError(strNmea, "Multi-sentence decoding failed.");
                                 }
                             }
                             else
@@ -927,28 +954,25 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                                 onDecodeError(strNmea, "Multi-sentence decoding failed.");
                             }
                         }
-                        else
-                        {
-                            // sentence error, so just reset
-                            m_uDecodingErrors++;
-                            m_multiSentences[iMsgId] = nullptr;
-                            onDecodeError(strNmea, "Multi-sentence decoding failed.");
-                        }
                     }
+                }
+                else
+                {
+                    m_uDecodingErrors++;
+                    onDecodeError(strNmea, "Sentence not a valid AIS sentence.");
                 }
             }
             else
             {
-                m_uDecodingErrors++;
-                onDecodeError(strNmea, "Sentence not a valid.");
+                m_uCrcErrors++;
+                onDecodeError(strNmea, "Sentence decoding error. CRC check failed.");
             }
         }
         else
         {
-            m_uCrcErrors++;
-            onDecodeError(strNmea, "Sentence decoding error. CRC check failed.");
+            onDecodeError(strLine, "Sentence decoding error. No valid NMEA data found.");
         }
-        
+
         m_uTotalBytes += n;
     }
     else    // n == 0 (i.e. decoder finished with data buffer)
