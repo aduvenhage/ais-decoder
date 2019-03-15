@@ -116,6 +116,7 @@ set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_RELEASE NDEBUG=1)
 # capture project/build/test files (not compiled, but visible in solutions)
 set(PROJ_FILES
     ${CMAKE_SOURCE_DIR}/README.md
+    ${CMAKE_SOURCE_DIR}/.gitignore
     ${CMAKE_SOURCE_DIR}/examples/example_utils.h
     ${CMAKE_SOURCE_DIR}/python/ais_decoder.i
     ${CMAKE_SOURCE_DIR}/python/setup.py
