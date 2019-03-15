@@ -126,7 +126,6 @@ int main()
         */
         //testAis("ais.txt");
         
-        
         testAis("20170211.log");
         testAis("20170212.log");
         testAis("20170213.log");
@@ -134,7 +133,6 @@ int main()
         testAis("20170215.log");
         testAis("20170216.log");
         testAis("20170217.log");
-
         
         /*
         testAis("datacron_20160103.txt");

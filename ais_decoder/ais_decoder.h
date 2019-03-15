@@ -66,15 +66,42 @@ namespace AIS
     uint8_t crc(const StringRef &_strLine);
     
     
+    
+    /**
+     Multi-sentence messages migth span across different source buffers and input (string views) has to be stored internally.
+     This class is a store of buffers for use by multi-sentence containers (see MultiSentence).
+     
+     */
+    class MultiSentenceBufferStore
+    {
+     public:
+        /// get a buffer to use for multi-line sentence decoding
+        std::unique_ptr<Buffer> getBuffer();
+        
+        /// return buffer to pool
+        void returnBuffer(std::unique_ptr<Buffer> &_buffer);
+
+     private:
+        std::vector<std::unique_ptr<Buffer>>    m_buffers;      ///< available buffers
+    };
+    
+    
     /**
      Multi-sentence message container.
+     
+     NOTE: multi-sentence messages migth span across different source buffers and input (string views) has to be stored internally.
      
      */
     class MultiSentence
     {
      public:
-        /// add first fragment
-        MultiSentence(int _iFragmentCount, const StringRef &_strFragment, const StringRef &_strLine, const StringRef &_strHeader, const StringRef &_strFooter);
+        /// constructor -- add first fragment
+        MultiSentence(int _iFragmentCount, const StringRef &_strFragment,
+                      const StringRef &_strLine,
+                      const StringRef &_strHeader, const StringRef &_strFooter,
+                      MultiSentenceBufferStore &_bufferStore);
+        
+        ~MultiSentence();
         
         /// add more fragments (returns false if there is an fragment indexing error)
         bool addFragment(int _iFragmentNum, const StringRef &_strFragment, const StringRef &_strLine);
@@ -83,7 +110,7 @@ namespace AIS
         bool isComplete() const;
         
         /// returns full payload
-        void payload(std::string &_payload) const;
+        const StringRef &payload() const {return m_strPayload;}
         
         /// returns full payload (ref stays valid only while this object exists and addFragment is not called)
         const StringRef &header() const {return m_strHeader;}
@@ -94,18 +121,20 @@ namespace AIS
         /// returns original sentences referenced my this multi-line sentence
         const std::vector<StringRef> &sentences() const {return m_vecLines;}
         
-        /// backup string data by allocating own internal buffer, copying data and referencing from that
-        void backupData();
+     private:
+        /// copies string view into internal buffer
+        StringRef bufferString(const std::unique_ptr<Buffer> &_pBuffer, const StringRef &_str);
         
      protected:
-        int                     m_iFragmentCount;
-        int                     m_iFragmentNum;
-        StringRef               m_strHeader;     ///< footer
-        StringRef               m_strFooter;
-        std::vector<StringRef>  m_vecPayload;    ///< all multi-line fragments
-        std::vector<StringRef>  m_vecLines;      ///< original lines
-        size_t                  m_uPayloadSize;  ///< accumulated payload size
-        Buffer                  m_backup;        ///< internal buffer used as backup to string data
+        int                         m_iFragmentCount;
+        int                         m_iFragmentNum;
+        StringRef                   m_strHeader;
+        StringRef                   m_strFooter;
+        StringRef                   m_strPayload;
+        std::vector<StringRef>      m_vecLines;      ///< original lines
+        MultiSentenceBufferStore    &m_bufferStore;
+        std::unique_ptr<Buffer>     m_pBufferPayload; ///< internal buffer used as backup to string data
+        std::unique_ptr<Buffer>     m_pBufferMeta;    ///< internal buffer used as backup to string data
     };
     
     
@@ -232,6 +261,9 @@ namespace AIS
         /// returns all the sentences that contributed to the current message (valid during calls to 'onMessage' and 'onTypeXX' callbacks)
         const std::vector<StringRef> &sentences() const {return m_vecSentences;}
         
+        /// returns current message timestamp, decoded from message header or footer (returns 0 if none found)
+        uint64_t timestamp() const;
+        
 
         // user defined callbacks
      protected:
@@ -324,7 +356,7 @@ namespace AIS
         PayloadBuffer                                                           m_binaryBuffer;         ///< used internally to decode NMEA payloads
         std::array<std::unique_ptr<MultiSentence>, MAX_MSG_SEQUENCE_IDS>        m_multiSentences;       ///< used internally to buffer multi-line message sentences
         std::array<StringRef, MAX_MSG_WORDS>                                    m_words;                ///< used internally to buffer NMEA words
-        std::string                                                             m_fragmentBuffer;       ///< used internally to join multiline fragments before decoding
+        MultiSentenceBufferStore                                                m_multiSentenceBuffers;
         
         std::vector<StringRef>                                                  m_vecSentences;         ///< all NMEA/raw sentences for message - stored for each message just before user callbacks
         StringRef                                                               m_strHeader;            ///< extracted META header

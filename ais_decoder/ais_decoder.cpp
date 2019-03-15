@@ -237,19 +237,56 @@ uint8_t AIS::crc(const StringRef &_strNmea)
 
 
 
-MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFragment, const StringRef &_strLine, const StringRef &_strHeader, const StringRef &_strFooter)
+/* get a buffer to use for multi-line sentence decoding */
+std::unique_ptr<Buffer> MultiSentenceBufferStore::getBuffer()
+{
+    if (m_buffers.empty() == true)
+    {
+        return std::make_unique<Buffer>(0);
+    }
+    else
+    {
+        auto pBuf = std::move(m_buffers.back());
+        m_buffers.pop_back();
+        return pBuf;
+    }
+}
+
+/* return buffer to pool */
+void MultiSentenceBufferStore::returnBuffer(std::unique_ptr<Buffer> &_buffer)
+{
+    _buffer->clear();
+    m_buffers.push_back(std::move(_buffer));
+}
+
+
+
+MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFragment,
+                             const StringRef &_strLine, const StringRef &_strHeader,
+                             const StringRef &_strFooter,
+                             MultiSentenceBufferStore &_bufferStore)
     :m_iFragmentCount(_iFragmentCount),
      m_iFragmentNum(0),
      m_strHeader(_strHeader),
      m_strFooter(_strFooter),
-     m_vecPayload(_iFragmentCount),
      m_vecLines(_iFragmentCount),
-     m_uPayloadSize(0)
+     m_bufferStore(_bufferStore)
 {
-    m_vecPayload[0] = _strFragment;
-    m_vecLines[0] = _strLine;
-    m_uPayloadSize += _strFragment.size();
+    // get buffers
+    m_pBufferMeta = m_bufferStore.getBuffer();
+    m_pBufferPayload = m_bufferStore.getBuffer();
+
+    // init first fragment
+    bufferString(m_pBufferPayload, _strFragment);
+    m_vecLines[0] = bufferString(m_pBufferMeta, _strLine);
     m_iFragmentNum++;
+}
+
+MultiSentence::~MultiSentence()
+{
+    // return buffers
+    m_bufferStore.returnBuffer(m_pBufferMeta);
+    m_bufferStore.returnBuffer(m_pBufferPayload);
 }
 
 bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment, const StringRef &_strLine)
@@ -259,10 +296,15 @@ bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment
          (m_iFragmentNum == _iFragmentNum-1) )
     {
         // append data
-        m_vecPayload[_iFragmentNum-1] = _strFragment;
-        m_vecLines[_iFragmentNum-1] = _strLine;
-        m_uPayloadSize += _strFragment.size();
+        bufferString(m_pBufferPayload, _strFragment);
+        m_vecLines[_iFragmentNum-1] = bufferString(m_pBufferMeta, _strLine);
         m_iFragmentNum++;
+        
+        // finish
+        if (isComplete() == true)
+        {
+            m_strPayload = StringRef(m_pBufferPayload->data(), m_pBufferPayload->size());
+        }
         
         return true;
     }
@@ -277,54 +319,13 @@ bool MultiSentence::isComplete() const
     return m_iFragmentCount == m_iFragmentNum;
 }
 
-void MultiSentence::payload(std::string &_payload) const
+/* copies string view into internal buffer */
+StringRef MultiSentence::bufferString(const std::unique_ptr<Buffer> &_pBuffer, const StringRef &_str)
 {
-    _payload.clear();
-    for (size_t i = 0; i < m_vecPayload.size(); i++)
-    {
-        auto &str = m_vecPayload[i];
-        _payload.append(str.data(), str.size());
-    }
-}
-
-void MultiSentence::backupData()
-{
-    // append string data to backup buffer
-    // NOTE: should allow for a new backup on a previous backup
-    size_t uOffset = m_backup.size();
-    m_backup.resize(uOffset + m_uPayloadSize + m_strHeader.size() + m_strFooter.size());
-    m_backup.append(m_strHeader.data(), m_strHeader.size());
-    m_backup.append(m_strFooter.data(), m_strFooter.size());
+    size_t uOffset = _pBuffer->size();
+    _pBuffer->append(_str.data(), _str.size());
     
-    for (const auto &str : m_vecPayload)
-    {
-        m_backup.append(str.data(), str.size());
-    }
-    
-    for (const auto &str : m_vecLines)
-    {
-        m_backup.append(str.data(), str.size());
-    }
-    
-    // cleanup buffer
-    m_backup.pop_front(uOffset);
-    
-    // re-base string references
-    m_strHeader = StringRef(m_backup.data(), m_strHeader.size());
-    m_strFooter = StringRef(m_backup.data() + m_strHeader.size(), m_strFooter.size());
-    
-    uOffset = m_strHeader.size() + m_strFooter.size();
-    for (auto &str : m_vecPayload)
-    {
-        str = StringRef(m_backup.data() + uOffset, str.size());
-        uOffset += str.size();
-    }
-    
-    for (auto &str : m_vecLines)
-    {
-        str = StringRef(m_backup.data() + uOffset, str.size());
-        uOffset += str.size();
-    }
+    return StringRef(_pBuffer->data() + uOffset, _str.size());
 }
 
 
@@ -893,7 +894,8 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                         {
                             m_multiSentences[iMsgId] = std::make_unique<MultiSentence>(iFragmentCount, m_words[5], strLine,
                                                                                        _parser.getHeader(strLine, strNmea),
-                                                                                       _parser.getFooter(strLine, strNmea));
+                                                                                       _parser.getFooter(strLine, strNmea),
+                                                                                       m_multiSentenceBuffers);
                         }
                         
                         // update multi-sentence object with more fragments
@@ -911,14 +913,11 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
                                     // check if all fragments have been received
                                     if (pMultiSentence->isComplete() == true)
                                     {
-                                        // join payload fragments
-                                        pMultiSentence->payload(m_fragmentBuffer);
-
                                         // setup user data
                                         m_strHeader = pMultiSentence->header();
                                         m_strFooter = pMultiSentence->footer();
                                         m_vecSentences = pMultiSentence->sentences();
-                                        m_strPayload = StringRef(m_fragmentBuffer.data(), m_fragmentBuffer.size());
+                                        m_strPayload = pMultiSentence->payload();
 
                                         // decode whole payload and reset
                                         try
@@ -974,17 +973,6 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         }
 
         m_uTotalBytes += n;
-    }
-    else    // n == 0 (i.e. decoder finished with data buffer)
-    {
-        // backup all partial multi-line messages from previous data block, since original references may not be valid anymore
-        for (auto &pMs : m_multiSentences)
-        {
-            if (pMs != nullptr)
-            {
-                pMs->backupData();
-            }
-        }
     }
     
     return n;
