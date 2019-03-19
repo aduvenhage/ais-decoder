@@ -292,11 +292,21 @@ class AisQuickDecoder : public AIS::AisDecoder
     
     virtual void onNotDecoded(const AIS::StringRef &/*_strMessage*/, int /*_iMsgType*/) override {}
     
-    virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
+    virtual void onDecodeError(const AIS::StringRef &_strPayload, const std::string &_strError) override {
         AisMessage msg;
         
         msg.m_fields["msg"] = std::to_string(0);
-        msg.m_fields["payload"] = _strMessage;
+        msg.m_fields["payload"] = _strPayload;
+        msg.m_fields["error"] = _strError;
+        
+        m_messages.push(std::move(msg));
+    }
+    
+    virtual void onParseError(const AIS::StringRef &_strLine, const std::string &_strError) override {
+        AisMessage msg;
+        
+        msg.m_fields["msg"] = std::to_string(0);
+        msg.m_fields["line"] = _strLine;
         msg.m_fields["error"] = _strError;
         
         m_messages.push(std::move(msg));

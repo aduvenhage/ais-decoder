@@ -304,6 +304,9 @@ namespace AIS
         /// called when any decoding error ocurred
         virtual void onDecodeError(const StringRef &_strPayload, const std::string &_strError) = 0;
         
+        /// called when any parsing error ocurred
+        virtual void onParseError(const StringRef &_strLine, const std::string &_strError) = 0;
+        
      private:
         /// enable/disable msg callback
         void setMsgCallback(int _iType, pfnMsgCallback _pfnCb, bool _bEnabled);

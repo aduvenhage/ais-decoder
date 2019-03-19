@@ -119,7 +119,8 @@ class AisType5Db : public AIS::AisDecoder
     virtual void onNotDecoded(const AIS::StringRef &_strPayload, int _iMsgType) override {}
     
     virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {}
-    
+    virtual void onParseError(const AIS::StringRef &_strMessage, const std::string &_strError) override {}
+
 private:
     VesselDb                    &m_db;
 };
@@ -336,6 +337,11 @@ class AisNmeaFilter : public AIS::AisDecoder
     virtual void onNotDecoded(const AIS::StringRef &_strPayload, int _iMsgType) override {}
     
     virtual void onDecodeError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
+        std::string msg(_strMessage.data(), _strMessage.size());
+        printf("%s [%s]\n", _strError.c_str(), msg.c_str());
+    }
+    
+    virtual void onParseError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
         std::string msg(_strMessage.data(), _strMessage.size());
         printf("%s [%s]\n", _strError.c_str(), msg.c_str());
     }

@@ -122,6 +122,11 @@ class AisCsvDecoder : public AIS::AisDecoder
         printf("%s [%s]\n", _strError.c_str(), msg.c_str());
     }
     
+    virtual void onParseError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
+        std::string msg(_strMessage.data(), _strMessage.size());
+        printf("%s [%s]\n", _strError.c_str(), msg.c_str());
+    }
+    
  private:
     std::ofstream               m_fout;             ///< CVS output file
     const AIS::SentenceParser   &m_parser;          ///< sentence parser being used

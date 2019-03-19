@@ -969,7 +969,7 @@ size_t AisDecoder::decodeMsg(const char *_pNmeaBuffer, size_t _uBufferSize, size
         }
         else
         {
-            onDecodeError(strLine, "Sentence decoding error. No valid NMEA data found.");
+            onParseError(strLine, "Sentence decoding error. No valid NMEA data found.");
         }
 
         m_uTotalBytes += n;

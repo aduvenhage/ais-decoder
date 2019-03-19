@@ -77,6 +77,13 @@ class AisDummyDecoder : public AIS::AisDecoder
             
         printf("%s [%s]\n", _strError.c_str(), msg.c_str());
     }
+    
+    virtual void onParseError(const AIS::StringRef &_strMessage, const std::string &_strError) override {
+        std::string msg(_strMessage.data(), _strMessage.size());
+        AIS::stripTrailingWhitespace(msg);
+        
+        printf("%s [%s]\n", _strError.c_str(), msg.c_str());
+    }
 };
 
 

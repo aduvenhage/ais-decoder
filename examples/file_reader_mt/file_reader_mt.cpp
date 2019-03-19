@@ -76,6 +76,7 @@ class AisDummyDecoder : public AIS::AisDecoder
 	 virtual void onNotDecoded(const AIS::StringRef &, int) override {}
 
      virtual void onDecodeError(const AIS::StringRef &, const std::string &_strError) override {printf("%s\n", _strError.c_str());}
+     virtual void onParseError(const AIS::StringRef &, const std::string &_strError) override {printf("%s\n", _strError.c_str());}
 };
 
 
