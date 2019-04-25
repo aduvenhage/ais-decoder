@@ -89,7 +89,9 @@ namespace AIS
     /**
      Multi-sentence message container.
      
-     NOTE: multi-sentence messages migth span across different source buffers and input (string views) has to be stored internally.
+     Multi-sentence messages migth span across different source buffers and the input has to be stored internally.
+     A buffer pool (see MultiSentenceBufferStore) is used to avoid memory allocations as far as possible when storing the
+     message data.
      
      */
     class MultiSentence
@@ -122,19 +124,22 @@ namespace AIS
         const std::vector<StringRef> &sentences() const {return m_vecLines;}
         
      private:
-        /// copies string view into internal buffer
+        /// copies string view into internal buffer (adds to buffer)
         StringRef bufferString(const std::unique_ptr<Buffer> &_pBuffer, const StringRef &_str);
         
+        /// copies string view into internal buffer (creates new buffer)
+        StringRef bufferString(const StringRef &_str);
+
      protected:
-        int                         m_iFragmentCount;
-        int                         m_iFragmentNum;
-        StringRef                   m_strHeader;
-        StringRef                   m_strFooter;
-        StringRef                   m_strPayload;
-        std::vector<StringRef>      m_vecLines;      ///< original lines
-        MultiSentenceBufferStore    &m_bufferStore;
-        std::unique_ptr<Buffer>     m_pBufferPayload; ///< internal buffer used as backup to string data
-        std::unique_ptr<Buffer>     m_pBufferMeta;    ///< internal buffer used as backup to string data
+        int                                     m_iFragmentCount;
+        int                                     m_iFragmentNum;
+        StringRef                               m_strHeader;
+        StringRef                               m_strFooter;
+        StringRef                               m_strPayload;
+        std::vector<StringRef>                  m_vecLines;
+        MultiSentenceBufferStore                &m_bufferStore;
+        std::vector<std::unique_ptr<Buffer>>    m_metaBuffers;
+        std::unique_ptr<Buffer>                 m_pPayloadBuffer;
     };
     
     

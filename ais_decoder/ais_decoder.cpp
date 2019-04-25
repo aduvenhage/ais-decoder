@@ -267,26 +267,31 @@ MultiSentence::MultiSentence(int _iFragmentCount, const StringRef &_strFragment,
                              MultiSentenceBufferStore &_bufferStore)
     :m_iFragmentCount(_iFragmentCount),
      m_iFragmentNum(0),
-     m_strHeader(_strHeader),
-     m_strFooter(_strFooter),
      m_vecLines(_iFragmentCount),
      m_bufferStore(_bufferStore)
 {
-    // get buffers
-    m_pBufferMeta = m_bufferStore.getBuffer();
-    m_pBufferPayload = m_bufferStore.getBuffer();
-
+    // buffer payload
+    m_pPayloadBuffer = m_bufferStore.getBuffer();
+    m_strPayload = bufferString(m_pPayloadBuffer, _strFragment);
+    
+    // buffer header and footer
+    m_strHeader = bufferString(_strHeader);
+    m_strFooter = bufferString(_strFooter);
+    
     // init first fragment
-    bufferString(m_pBufferPayload, _strFragment);
-    m_vecLines[0] = bufferString(m_pBufferMeta, _strLine);
+    m_vecLines[0] = bufferString(_strLine);
     m_iFragmentNum++;
 }
 
 MultiSentence::~MultiSentence()
 {
     // return buffers
-    m_bufferStore.returnBuffer(m_pBufferMeta);
-    m_bufferStore.returnBuffer(m_pBufferPayload);
+    m_bufferStore.returnBuffer(m_pPayloadBuffer);
+    
+    for (auto &pBuf : m_metaBuffers)
+    {
+        m_bufferStore.returnBuffer(pBuf);
+    }
 }
 
 bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment, const StringRef &_strLine)
@@ -296,15 +301,9 @@ bool MultiSentence::addFragment(int _iFragmentNum, const StringRef &_strFragment
          (m_iFragmentNum == _iFragmentNum-1) )
     {
         // append data
-        bufferString(m_pBufferPayload, _strFragment);
-        m_vecLines[_iFragmentNum-1] = bufferString(m_pBufferMeta, _strLine);
+        m_strPayload = bufferString(m_pPayloadBuffer, _strFragment);
+        m_vecLines[_iFragmentNum-1] = bufferString(_strLine);
         m_iFragmentNum++;
-        
-        // finish
-        if (isComplete() == true)
-        {
-            m_strPayload = StringRef(m_pBufferPayload->data(), m_pBufferPayload->size());
-        }
         
         return true;
     }
@@ -319,15 +318,25 @@ bool MultiSentence::isComplete() const
     return m_iFragmentCount == m_iFragmentNum;
 }
 
-/* copies string view into internal buffer */
+/* copies string view into internal buffer (adds to buffer) */
 StringRef MultiSentence::bufferString(const std::unique_ptr<Buffer> &_pBuffer, const StringRef &_str)
 {
-    size_t uOffset = _pBuffer->size();
+    // append to buffer and return new string ref to whole buffer
     _pBuffer->append(_str.data(), _str.size());
-    
-    return StringRef(_pBuffer->data() + uOffset, _str.size());
+    return StringRef(_pBuffer->data(), _pBuffer->size());
 }
 
+/* copies string view into internal buffer (creates new buffer) */
+StringRef MultiSentence::bufferString(const StringRef &_str)
+{
+    // get new buffer and append data
+    m_metaBuffers.push_back(m_bufferStore.getBuffer());
+    auto &pMetaBuffer = m_metaBuffers.back();
+    pMetaBuffer->append(_str.data(), _str.size());
+    
+    // return new string ref to buffer
+    return StringRef(pMetaBuffer->data(), _str.size());
+}
 
 
 
