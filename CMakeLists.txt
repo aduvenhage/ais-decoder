@@ -85,8 +85,8 @@ ELSE(WIN32)
 ENDIF(WIN32)
 
 
-# requires C++17
-set(CMAKE_CXX_STANDARD 17)
+# requires C++14
+set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # setup some general compiler settings for target platform
