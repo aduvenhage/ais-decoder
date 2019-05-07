@@ -137,7 +137,6 @@ namespace AIS
          */
         class StringRef
         {
-            kkk
          public:
             static const size_t npos = size_t(-1);
             
