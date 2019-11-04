@@ -27,6 +27,53 @@ def read_in_chunks(file_object, chunk_size=1024*1024*4):
             break
         yield data
 
+# def read_ais_lines(CFG):
+#     start = time.time() 
+#     folder = CFG.get('Other','Folder')
+#     log.info('Reading AIS files from {0}'.format(folder))
+#     for filename in os.listdir(folder):
+#         try:
+#             log.info('Reading file: {0}'.format(filename))
+#             f = open(os.path.join(folder,filename))
+
+#             with open(os.path.join(folder,filename)) as fp:
+#                 line = fp.readline()
+#                 cnt = 1
+#                 while line:
+#                     line = fp.readline()
+#                     ais_decoder.
+#                     cnt += 1
+
+
+
+
+
+#             for piece in read_in_chunks(f):
+#                 log.info('Chunk: %s',piece)
+#                 ais_decoder.pushAisChunk(piece, len(piece)) 
+                
+#                 while True:
+#                     if ais_decoder.numAisMessages() == 0:
+#                         break
+#                     msg = ais_decoder.popAisMessage().asdict()
+#                     log.info('MSG: %s', msg)
+
+#                     try:
+#                         clean_msg = ais_helper.ais_handler(msg)     
+#                         log.info('Decoded: {0}'.format(clean_msg))
+#                     except Exception as Error:
+#                         log.warning("Problem with cleaning AIS message: {0}".format(Error))
+#                         log.warning(msg)
+        
+#         except RuntimeError as err:
+#             log.warning("Runtime error: {0} ".format(err))
+#         except Exception as err:
+#             log.warning("Other error: {0} ".format(err))
+    
+#         duration = time.time() - start
+#         log.info("Done in {0} secs".format(duration))
+    
+
 
 def the_bigun(CFG):
     start = time.time() 
@@ -38,12 +85,15 @@ def the_bigun(CFG):
             f = open(os.path.join(folder,filename))
      
             for piece in read_in_chunks(f):
-                ais_decoder.pushAisChunk(piece, len(piece))          
-            
+                # log.info('Chunk: %s',piece)
+                ais_decoder.pushAisChunk(piece, len(piece)) 
+                
                 while True:
                     if ais_decoder.numAisMessages() == 0:
                         break
                     msg = ais_decoder.popAisMessage().asdict()
+                    log.info('MSG: %s', msg)
+
                     try:
                         clean_msg = ais_helper.ais_handler(msg)     
                         log.info('Decoded: {0}'.format(clean_msg))

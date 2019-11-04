@@ -30,7 +30,7 @@ module1 = Extension('_ais_decoder',
                     swig_opts=['-c++', '-I '+pathHeaders])
 
 setup(name = 'AisDecoder',
-      version = '1.0',
+      version = '1.1',
       description = 'AIS Decoder',
       author = 'Arno Duvenhage',
       author_email = '',

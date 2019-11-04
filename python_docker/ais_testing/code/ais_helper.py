@@ -19,9 +19,14 @@ log = logging.getLogger(__name__)
 
 
 def ais_handler(ais_bit_dict, source_type = 'TNPA'):
+    # AIS Bit Dict: {'error': 'Sentence decoding error. CRC check failed.', 'msg': '0', 'payload': '2019-10-31 00:00:06,462: \\s:66,c:1572472790*32'}
+    log.info('AIS Bit Dict: {0}'.format(ais_bit_dict))
     ais_message_type = ais_bit_dict['msg']
     if source_type == 'TNPA': 
         msg_datetime, ais_bit_dict['event_time']  = tnpa_meta_handler(ais_bit_dict)
+    elif source_type == 'IMIS':
+        # Raw line: 2019-10-31 00:00:01,621: \s:66,c:1572472781*32\!AIVDM,1,1,,,4@6cnmQv>gEsWKidHGgd5qi00000,0*0D
+        msg_datetime, ais_bit_dict['event_time']  = imis_meta_handler(ais_bit_dict)
     else:
         ais_bit_dict['event_time'] = datetime.datetime.now()
         
@@ -53,6 +58,11 @@ def ais_handler(ais_bit_dict, source_type = 'TNPA'):
     
 
 def tnpa_meta_handler(ais_bit_dict):
+    iso_time = datetime.datetime.fromtimestamp(int(ais_bit_dict['footer'].strip(',')))
+    
+    return iso_time, iso_time.strftime('%Y-%m-%d %H:%M:%S')
+
+def imis_meta_handler(ais_bit_dict):
     iso_time = datetime.datetime.fromtimestamp(int(ais_bit_dict['footer'].strip(',')))
     
     return iso_time, iso_time.strftime('%Y-%m-%d %H:%M:%S')
