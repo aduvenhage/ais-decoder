@@ -49,7 +49,6 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
 		else 
 		{
 			const char *up_start = (const char*)memchr(pCh + 1, '\\', uPayloadSize - 1);
-			cout << "hello, start" << endl
 			
 			if (up_start != nullptr) {
 				// find META data block end; next '\' character
@@ -60,14 +59,12 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
 				{
 					pPayloadStart = pCh + 1;
 					uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
-					cout << "hello, world" << endl
 				}
 				// if no second forward slash exists...
 				else
 				{
 					pPayloadStart = up_start + 1;
 					uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
-					cout << "goodbye, world" << endl
 				}
 			} else {
 				uPayloadSize = 0;
