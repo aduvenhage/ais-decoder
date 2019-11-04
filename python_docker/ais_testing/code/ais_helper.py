@@ -63,7 +63,13 @@ def tnpa_meta_handler(ais_bit_dict):
     return iso_time, iso_time.strftime('%Y-%m-%d %H:%M:%S')
 
 def imis_meta_handler(ais_bit_dict):
-    iso_time = datetime.datetime.fromtimestamp(int(ais_bit_dict['footer'].strip(',')))
+    '''
+    Message looks like: 
+    {'cog': '6', 'footer': '', 'header': '2019-10-31 00:00:01,628: \\s:66,c:1572472771*3D', 
+    'heading': '1', 'mmsi': '354348000', 'msg': '3', 'nav_status': '0', 'pos_accuracy': '1', 
+    'pos_lat': '3670720', 'pos_lon': '39027618', 'rot': '0', 'sog': '140', 'timestamp': '1572472771'}
+    '''
+    iso_time = datetime.datetime.fromtimestamp(int(ais_bit_dict['timestamp']))
     
     return iso_time, iso_time.strftime('%Y-%m-%d %H:%M:%S')
     

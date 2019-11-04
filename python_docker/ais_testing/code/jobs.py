@@ -95,7 +95,7 @@ def the_bigun(CFG):
                     log.info('MSG: %s', msg)
 
                     try:
-                        clean_msg = ais_helper.ais_handler(msg)     
+                        clean_msg = ais_helper.ais_handler(msg, source_type = 'IMIS')     
                         log.info('Decoded: {0}'.format(clean_msg))
                     except Exception as Error:
                         log.warning("Problem with cleaning AIS message: {0}".format(Error))
