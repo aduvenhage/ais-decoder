@@ -12,7 +12,7 @@ using namespace AIS;
 /*
  Called to find NMEA start (scan past any headers, META data, etc.; returns NMEA payload)
  This implementation will scan past META data that start and end with a '\'.  It will also stop at NMEA CRC.
- 
+ 2019-04-19 00:00:00,858: \s:66,c:1555624743*38\!AIVDM,1,1,,,15@FOD001d13jm5diLkDECT6081H,0*70
  */
 StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) const
 {
@@ -21,10 +21,10 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
     
     // check for common META data block headers
     const char *pCh = pPayloadStart;
-    if (*pCh == '\\')
-    {
+    //if (*pCh == '\\')
+    //{
         // find META data block end
-        pCh = (const char*)memchr(pCh + 1, '\\', uPayloadSize - 1);
+        pCh = (const char*)memrchr(pCh+1, '\\!A', uPayloadSize - 1);
         if (pCh != nullptr)
         {
             pPayloadStart = pCh + 1;
@@ -34,11 +34,11 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
         {
             uPayloadSize = 0;
         }
-    }
-    else if (std::strncmp(pCh, "$P", 2) == 0)
-    {
-        uPayloadSize = 0;
-    }
+    //}
+    //else if (std::strncmp(pCh, "$P", 2) == 0)
+    //{
+    //    uPayloadSize = 0;
+    //}
 
     // find payload size (using crc '*' plus 2 chars for crc value)
     if (uPayloadSize > 0)
