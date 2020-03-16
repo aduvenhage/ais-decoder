@@ -1,7 +1,7 @@
-FROM python:3.6-jessie
+FROM python:3.6-stretch
 MAINTAINER Rory <rmeyer.csir@gmail.com>
 RUN apt-get update
-RUN apt-get install -y python3-dev postgresql swig g++ cmake make
+RUN apt-get install -y python3-dev swig g++ cmake make
 RUN python3 -m ensurepip
 RUN mkdir /usr/local/code && mkdir /usr/local/data
 COPY ais_testing/requirements.txt /usr/local/code
