@@ -24,10 +24,10 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
     //if (*pCh == '\\')
     //{
         // find META data block end
-        pCh = (const char*)memrchr(pCh+1, '\\!A', uPayloadSize - 1);
+        pCh = (const char*)memrchr(pCh, '\\!A', uPayloadSize - 1);
         if (pCh != nullptr)
         {
-            pPayloadStart = pCh + 1;
+            pPayloadStart = pCh - 1;
             uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
         }
         else
