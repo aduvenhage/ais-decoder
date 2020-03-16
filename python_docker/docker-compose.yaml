@@ -7,7 +7,7 @@ services:
             context: .
             dockerfile: ./ais_testing/Dockerfile
         volumes:
-            - /etc/localtime:/etc/localtime:ro
+       #     - /etc/localtime:/etc/localtime:ro
             - ./ais_testing/code:/usr/local/code
             - ./ais_testing/data:/usr/local/data
             - ./ais_testing/logs:/usr/local/logs
