@@ -43,10 +43,14 @@ def the_bigun(CFG):
                 while True:
                     if ais_decoder.numAisMessages() == 0:
                         break
+                    log.warning('--------------------------')
                     msg = ais_decoder.popAisMessage().asdict()
                     try:
-                        clean_msg = ais_helper.ais_handler(msg)     
-                        log.info('Decoded: {0}'.format(clean_msg))
+                        if msg['msg'] == '0':
+                            log.warning('Decoder error: {0}'.format(msg.get('error')))
+                            log.warning(msg)
+                        clean_msg = ais_helper.ais_handler(msg, source_type = 'SAT')     
+                        # log.info('Decoded: {0}'.format(clean_msg))
                     except Exception as Error:
                         log.warning("Problem with cleaning AIS message: {0}".format(Error))
                         log.warning(msg)
@@ -58,3 +62,14 @@ def the_bigun(CFG):
     
         duration = time.time() - start
         log.info("Done in {0} secs".format(duration))
+
+
+
+        
+        
+
+# 2019-04-19 00:00:00,855: \s:66,c:1555624743*38\!AIVDM,1,1,,,144hw5030=0>lhl1WhLJUUr40@1?,0*24
+# ais_tester_1  | 2020-03-17 07:36:59,396 - WARNING - jobs - {'cog': '2710', 'footer': '', 'header': '2019-04-19 00:00:00,855: \\s:66,c:1555624743*38', 'heading': '189', 
+# 'mmsi': '273432340', 'msg': '1', 'nav_status': '0', 'pos_accuracy': '0', 'pos_lat': '1699953', 'pos_lon': '1943066', 'rot': '12', 'sog': '13', 'timestamp': '1555624743'}
+#  18 Apr 2019 21:59:03 GMT
+# 2019 23:59:03 GMT+0200

@@ -18,10 +18,14 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def ais_handler(ais_bit_dict, source_type = 'TNPA'):
+def ais_handler(ais_bit_dict, source_type = 'SAT'):
+    log.debug('AIS Handler: Input dict: {0}'.format(ais_bit_dict))
     ais_message_type = ais_bit_dict['msg']
     if source_type == 'TNPA': 
         msg_datetime, ais_bit_dict['event_time']  = tnpa_meta_handler(ais_bit_dict)
+    elif source_type == 'SAT': 
+        msg_datetime = datetime.datetime.utcfromtimestamp(int(ais_bit_dict['timestamp'])).isoformat()
+        ais_bit_dict['event_time']  = ais_bit_dict['timestamp']
     else:
         ais_bit_dict['event_time'] = datetime.datetime.now()
         
@@ -56,6 +60,7 @@ def tnpa_meta_handler(ais_bit_dict):
     iso_time = datetime.datetime.fromtimestamp(int(ais_bit_dict['footer'].strip(',')))
     
     return iso_time, iso_time.strftime('%Y-%m-%d %H:%M:%S')
+# def sat_meta_handler():
     
 def msg_1_2_3_handler(ais_bit_dict):
     ais_data_dict = {}

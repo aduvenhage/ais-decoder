@@ -24,7 +24,7 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
     //if (*pCh == '\\')
     //{
         // find META data block end
-        pCh = (const char*)memrchr(pCh, '\\!A', uPayloadSize - 1);
+        pCh = (const char*)memrchr(pCh, '!A', uPayloadSize - 1);
         if (pCh != nullptr)
         {
             pPayloadStart = pCh - 1;
@@ -32,7 +32,16 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
         }
         else
         {
-            uPayloadSize = 0;
+            pCh = (const char*)memrchr(pCh, '!B', uPayloadSize - 1);
+            if (pCh != nullptr)
+            {
+                pPayloadStart = pCh - 1;
+                uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
+            }
+            else
+            {
+                uPayloadSize = 0;
+            }
         }
     //}
     //else if (std::strncmp(pCh, "$P", 2) == 0)
@@ -43,7 +52,7 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
     // find payload size (using crc '*' plus 2 chars for crc value)
     if (uPayloadSize > 0)
     {
-        pCh = (const char*)memchr(pPayloadStart, '*', uPayloadSize);
+        pCh = (const char*)memrchr(pPayloadStart, '*', uPayloadSize);
         if (pCh != nullptr)
         {
             uPayloadSize = pCh + 3 - pPayloadStart;
