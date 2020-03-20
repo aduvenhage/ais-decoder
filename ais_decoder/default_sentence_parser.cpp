@@ -27,7 +27,7 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
         pCh = (const char*)memrchr(pCh, '!A', uPayloadSize - 1);
         if (pCh != nullptr)
         {
-            pPayloadStart = pCh - 1;
+            pPayloadStart = pCh;
             uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
         }
         else
@@ -35,7 +35,7 @@ StringRef DefaultSentenceParser::onScanForNmea(const StringRef &_strSentence) co
             pCh = (const char*)memrchr(pCh, '!B', uPayloadSize - 1);
             if (pCh != nullptr)
             {
-                pPayloadStart = pCh - 1;
+                pPayloadStart = pCh;
                 uPayloadSize = _strSentence.size() - (pPayloadStart - _strSentence.data());
             }
             else

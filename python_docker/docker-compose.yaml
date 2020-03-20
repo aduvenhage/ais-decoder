@@ -11,5 +11,6 @@ services:
             - ./ais_testing/code:/usr/local/code
             - ./ais_testing/data:/usr/local/data
             - ./ais_testing/logs:/usr/local/logs
-        command: python3 /usr/local/code/main.py -ll INFO -c /usr/local/code/config.cfg
+        # command: python3 /usr/local/code/main.py -ll INFO -c /usr/local/code/config.cfg
+        command: python3 /usr/local/code/test.py
         #restart: always
