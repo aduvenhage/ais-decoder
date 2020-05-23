@@ -125,27 +125,10 @@ void testAis(const std::string &_strLogPath)
 int main()
 {
     // to test - just keep on loading files forever
-    for (;;)
+    //for (;;)
     {
-        /*
-        testAis("LSS_20180514.ITU123_data.bu1");
-        testAis("nmea-sample_rep.txt");
-        */
-        //testAis("ais.txt");
+        testAis("ais.txt");
         
-        testAis("20170211.log");
-        testAis("20170212.log");
-        testAis("20170213.log");
-        testAis("20170214.log");
-        testAis("20170215.log");
-        testAis("20170216.log");
-        testAis("20170217.log");
-        
-        /*
-        testAis("datacron_20160103.txt");
-        testAis("datacron_20160104.txt");
-        testAis("datacron_20160105.txt");
-         */
     }
 
     //return 0;
