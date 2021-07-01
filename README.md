@@ -1,7 +1,7 @@
 AIS NMEA Message Decoder (v2.0)
 This project was created to learn more about AIS and see how easy it would be to create a decoder for the NMEA strings. The NMEA string decoding is implemented according to: 'http://catb.org/gpsd/AIVDM.html'.
 
-Also please, checkout https://github.com/aduvenhage/ais_beast for an attemp to make a faster decoder.
+Also please, checkout https://github.com/aduvenhage/ais_beast for an attemp to make a faster (C++ only) decoder.
 
 The decoder is designed to work off of raw data (processed in blocks) received from, for example, a file or a socket.  The raw data sentences (or lines) may be seperated by '[LF]' or '[CR][LF]'.
 
