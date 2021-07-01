@@ -1,6 +1,8 @@
 AIS NMEA Message Decoder (v2.0)
 This project was created to learn more about AIS and see how easy it would be to create a decoder for the NMEA strings. The NMEA string decoding is implemented according to: 'http://catb.org/gpsd/AIVDM.html'.
 
+Also please, checkout https://github.com/aduvenhage/ais_beast for an attemp to make a faster decoder.
+
 The decoder is designed to work off of raw data (processed in blocks) received from, for example, a file or a socket.  The raw data sentences (or lines) may be seperated by '[LF]' or '[CR][LF]'.
 
 The key component to implement was the 6bit nibble packing and unpacking of arbitrarily sized signed and unsigned integers as well as strings (see PayloadBuffer in ais_decoder.h).  The decoder interface also delivers clean strings (i.e. all characters after and including '@' removed and all trailing whitespace removed).
