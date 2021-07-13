@@ -3,6 +3,7 @@
 #include "strutils.h"
 
 #include <stdlib.h>
+#include <stdexcept>
 
 
 using namespace AIS;
